@@ -2,10 +2,10 @@
 import time
 from typing import Optional
 
-from src.infrastructure.vision import VisionSystem, ImageStitcher
-from src.infrastructure.cnc_controller import FluidNCSerial, FluidNCHTTP, CNCController
-from src.application.bed_mapping import BedMappingService
-from src.presentation.live_display import LiveStatusDisplay
+from cncsorter.infrastructure.vision import VisionSystem, ImageStitcher
+from cncsorter.infrastructure.cnc_controller import FluidNCSerial, FluidNCHTTP, CNCController
+from cncsorter.application.bed_mapping import BedMappingService
+from cncsorter.presentation.live_display import LiveStatusDisplay
 
 
 class CNCSorterApp:

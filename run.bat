@@ -54,7 +54,7 @@ echo ========================================
 echo.
 
 REM Run the application
-python src\main.py
+python -m src.main
 
 REM Deactivate virtual environment
 call venv\Scripts\deactivate.bat

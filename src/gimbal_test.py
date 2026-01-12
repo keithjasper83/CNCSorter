@@ -12,7 +12,7 @@ import time
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.infrastructure.gimbal_controller import (
+from cncsorter.infrastructure.gimbal_controller import (
     TwoAxisGimbal, ThreeAxisGimbal, GimbalPosition,
     AutomatedScanController, GPIO_AVAILABLE
 )

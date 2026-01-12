@@ -78,7 +78,7 @@ echo "========================================"
 echo ""
 
 # Run the application
-python src/main.py
+python -m src.main
 
 # Deactivate virtual environment
 deactivate

@@ -902,31 +902,25 @@ The gyroscope data can be logged alongside detection data:
 
 ## Troubleshooting
 
-### Import Error When Running Code
+### Running the Application
 
-**Error**: `ModuleNotFoundError: No module named 'src'`
-
-**Problem**: Running `python3 main.py` from inside the `src/` directory.
-
-**Solution**: Always run from the repository root:
+Always run from the repository root using the launcher scripts:
 
 ```bash
-# ❌ Wrong (from inside src/ directory):
-cd CNCSorter/src
-python3 main.py
+# ✅ Use launcher scripts (handles everything automatically):
+./run.sh               # Mac/Linux
+./run_rpi.sh           # Raspberry Pi
+run.bat                # Windows
+./run_gui.sh           # Touchscreen GUI
 
-# ✅ Correct (from repository root):
-cd CNCSorter
+# ✅ Or run as a module:
 python3 -m src.main
-
-# ✅ Or use the launcher scripts:
-./run.sh          # Mac/Linux
-./run_rpi.sh      # Raspberry Pi
-run.bat           # Windows
-./run_gui.sh      # Touchscreen GUI
 ```
 
-The code uses absolute imports (`from src.infrastructure...`) which require running as a module from the parent directory.
+**Project Structure**:
+- `src/` - Source code directory
+- `src/cncsorter/` - Python package with DDD architecture
+- `src/main.py` - Application entry point
 
 ---
 

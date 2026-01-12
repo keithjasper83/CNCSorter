@@ -53,7 +53,7 @@ echo "========================================"
 echo ""
 
 # Run the touchscreen GUI
-python src/gui_touchscreen.py
+python -m src.gui_touchscreen
 
 # Deactivate virtual environment
 deactivate

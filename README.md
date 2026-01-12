@@ -139,28 +139,32 @@ python src/main.py --cnc-mode http --cnc-host 192.168.1.100
 
 ## Project Structure
 
-Following Domain-Driven Design (DDD) principles:
+Following Domain-Driven Design (DDD) principles with clear separation between code organization and package structure:
 
 ```
 CNCSorter/
-├── src/                      # Source code
-│   ├── domain/              # Core business entities and logic
-│   │   └── entities.py      # Domain models (CNCCoordinate, DetectedObject, BedMap)
-│   ├── application/         # Use cases and orchestration
-│   │   └── bed_mapping.py   # Bed mapping service
-│   ├── infrastructure/      # Technical implementations
-│   │   ├── vision.py        # Vision system and image stitcher
-│   │   └── cnc_controller.py  # CNC communication (Serial/HTTP)
-│   ├── presentation/        # UI and user interaction
-│   │   └── live_display.py  # Live status display for Raspberry Pi
+├── src/                      # Source code directory (standard convention)
+│   ├── cncsorter/           # Python package (the actual application)
+│   │   ├── __init__.py      # Package initialization
+│   │   ├── domain/          # Core business entities and logic
+│   │   │   └── entities.py  # Domain models (CNCCoordinate, DetectedObject, BedMap)
+│   │   ├── application/     # Use cases and orchestration
+│   │   │   └── bed_mapping.py  # Bed mapping service
+│   │   ├── infrastructure/  # Technical implementations
+│   │   │   ├── vision.py    # Vision system and image stitcher
+│   │   │   ├── cnc_controller.py  # CNC communication (Serial/HTTP)
+│   │   │   ├── gimbal_controller.py  # Gimbal control with GPIO
+│   │   │   ├── object_classifier.py  # Shape-based classification
+│   │   │   ├── vision_enhanced.py    # Multi-source vision
+│   │   │   └── vision_multi_camera.py  # Multi-camera system
+│   │   ├── presentation/    # UI and user interaction
+│   │   │   └── live_display.py  # Live status display
+│   │   └── config.py        # System configuration
 │   ├── main.py             # Main application entry point
 │   ├── gui_touchscreen.py  # Touchscreen GUI for Raspberry Pi
+│   ├── gimbal_test.py      # Gimbal testing utility
 │   └── test_menu.py        # Interactive test menu
 ├── tests/                   # Tests and reference code
-│   ├── modules/            # Reference implementations
-│   │   ├── main.py         # Original simple implementation
-│   │   └── main_original.py  # Backup of original code
-│   └── README.md           # Test documentation
 ├── maps/                    # Saved bed maps (created at runtime)
 ├── requirements.txt         # Python dependencies (flexible versions)
 ├── requirements-lock.txt    # Pinned dependencies (security)
@@ -173,35 +177,39 @@ CNCSorter/
 └── README.md               # This file
 ```
 
+**Key Points**:
+- `src/` is a directory for source code organization (standard Python convention)
+- `src/cncsorter/` is the actual Python package with all the application code
+- Entry points (`main.py`, `test_menu.py`, etc.) are in `src/` for easy access
+- The package name `cncsorter` is meaningful and describes the application
+
 ## Troubleshooting
 
-### Error: ModuleNotFoundError: No module named 'src'
+### Running the Application
 
-**Problem**: You're trying to run the code directly from inside the `src/` directory.
-
-**Solution**: Always run from the **repository root** directory:
+The application should always be run from the **repository root** using one of these methods:
 
 ```bash
-# ❌ Wrong - Running from inside src/ directory:
-cd CNCSorter/src
-python3 main.py        # This will fail!
-
-# ✅ Correct - Running from repository root:
-cd CNCSorter
-python3 -m src.main    # This works!
-
-# ✅ Best - Use the launcher scripts:
+# ✅ Method 1: Use the launcher scripts (recommended):
 ./run.sh               # Mac/Linux
-./run_rpi.sh           # Raspberry Pi
+./run_rpi.sh           # Raspberry Pi  
 run.bat                # Windows
 ./run_gui.sh           # Touchscreen GUI
+
+# ✅ Method 2: Run as a Python module:
+python3 -m src.main
+
+# ✅ Method 3: With arguments:
+python3 -m src.main --camera 0
+python3 -m src.main --cnc-mode serial --cnc-port /dev/ttyUSB0
 ```
 
-**Why?** The code uses absolute imports like `from src.infrastructure.vision import ...` which require:
-1. You're in the parent directory of `src/`
-2. Running Python with the `-m` flag as a module
+**Why?** The code is organized with:
+- `src/` - Source code directory (standard convention)
+- `src/cncsorter/` - The actual Python package with domain, application, infrastructure, and presentation layers
+- `src/main.py` - Entry point that imports from the `cncsorter` package
 
-The launcher scripts handle this automatically.
+The launcher scripts automatically handle the correct execution from the repository root.
 
 ### Camera Not Found
 
