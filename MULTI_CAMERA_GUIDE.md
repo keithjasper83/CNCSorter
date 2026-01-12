@@ -389,15 +389,36 @@ The investment in additional cameras pays off through:
 
 
 
-%%% full error message whixhndoesnt work in chat
-Starting CNCSorter application...
-Press 's' to save a snapshot, 'q' to quit.
-========================================
+---
 
+## Common Error: ModuleNotFoundError
+
+If you see this error when running the code:
+
+```
 Traceback (most recent call last):
   File "/Users/kjasper/Documents/Development/CNCSorter/src/main.py", line 5, in <module>
     from src.infrastructure.vision import VisionSystem, ImageStitcher
 ModuleNotFoundError: No module named 'src'
+```
 
-Application closed.
- Is there some kind of syntax you are unable to read as giu seem tk not be ssding the makn messGe it appears to be suggeting that vision system and image sticher cannot be found . Path is src. Infastructure i can confirm there is a class called that but no file name? Perhaps there is a missing defiition for it
+**Problem**: You're trying to run `python3 main.py` from inside the `src/` directory.
+
+**Solution**: Always run from the **repository root**:
+
+```bash
+# ❌ Wrong (from inside src/ directory):
+cd CNCSorter/src
+python3 main.py
+
+# ✅ Correct (from repository root):
+cd CNCSorter
+python3 -m src.main
+
+# ✅ Or use the launcher scripts:
+./run.sh          # Mac/Linux
+./run_rpi.sh      # Raspberry Pi
+run.bat           # Windows
+```
+
+The code uses absolute imports (`from src.infrastructure...`) which require running as a module from the parent directory.

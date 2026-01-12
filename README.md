@@ -173,6 +173,54 @@ CNCSorter/
 └── README.md               # This file
 ```
 
+## Troubleshooting
+
+### Error: ModuleNotFoundError: No module named 'src'
+
+**Problem**: You're trying to run the code directly from inside the `src/` directory.
+
+**Solution**: Always run from the **repository root** directory:
+
+```bash
+# ❌ Wrong - Running from inside src/ directory:
+cd CNCSorter/src
+python3 main.py        # This will fail!
+
+# ✅ Correct - Running from repository root:
+cd CNCSorter
+python3 -m src.main    # This works!
+
+# ✅ Best - Use the launcher scripts:
+./run.sh               # Mac/Linux
+./run_rpi.sh           # Raspberry Pi
+run.bat                # Windows
+./run_gui.sh           # Touchscreen GUI
+```
+
+**Why?** The code uses absolute imports like `from src.infrastructure.vision import ...` which require:
+1. You're in the parent directory of `src/`
+2. Running Python with the `-m` flag as a module
+
+The launcher scripts handle this automatically.
+
+### Camera Not Found
+
+- **Mac**: Check System Preferences → Security & Privacy → Camera
+- **Raspberry Pi**: Enable camera with `sudo raspi-config` → Interface Options → Camera
+- Try different camera indices: `python3 -m src.main --camera 1`
+
+### CNC Connection Failed
+
+- **Serial**: Check port name and permissions (`ls /dev/tty*`)
+- **HTTP**: Verify FluidNC IP address and port
+- Test connection without CNC: Use `--cnc-mode none`
+
+For more detailed documentation, see:
+- [README_FULL.md](README_FULL.md) - Complete system guide
+- [INSTALL.md](INSTALL.md) - Installation and setup
+- [GIMBAL_HARDWARE_GUIDE.md](GIMBAL_HARDWARE_GUIDE.md) - Hardware assembly
+- [MULTI_CAMERA_GUIDE.md](MULTI_CAMERA_GUIDE.md) - Multi-camera setup
+
 ## Platform-Specific Notes
 
 ### Mac Development
