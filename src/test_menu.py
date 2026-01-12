@@ -1,11 +1,12 @@
 """Interactive test menu for CNCSorter - Test individual functions without running full automation."""
 import sys
+import os
 import time
 import cv2
 from typing import Optional
 
-# Add parent directory to path for imports
-sys.path.insert(0, '/home/runner/work/CNCSorter/CNCSorter/src')
+# Add parent directory to path for imports (relative to this file)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from domain.entities import CNCCoordinate
 from infrastructure.vision import VisionSystem, ImageStitcher

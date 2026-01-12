@@ -82,8 +82,8 @@ class CNCSorterApp:
                 self.cnc_controller = FluidNCSerial(port, baudrate)
             elif self.cnc_mode == "http":
                 host = self.cnc_config.get('host', '192.168.1.100')
-                port = self.cnc_config.get('port', 80)
-                self.cnc_controller = FluidNCHTTP(host, port)
+                http_port = self.cnc_config.get('http_port', 80)
+                self.cnc_controller = FluidNCHTTP(host, http_port)
             
             if self.cnc_controller:
                 self.display.update(status="Connecting to CNC...", stage="STARTUP", progress=50)
@@ -314,7 +314,7 @@ def main():
         'port': args.cnc_port,
         'baudrate': args.cnc_baudrate,
         'host': args.cnc_host,
-        'port': args.cnc_http_port
+        'http_port': args.cnc_http_port
     }
     
     # Create and run application
