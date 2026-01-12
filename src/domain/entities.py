@@ -47,7 +47,7 @@ class CapturedImage:
     image_data: any  # numpy array
     cnc_position: Optional[CNCCoordinate] = None
     timestamp: Optional[datetime] = None
-    detected_objects: List[DetectedObject] = None
+    detected_objects: Optional[List[DetectedObject]] = None
     
     def __post_init__(self):
         if self.timestamp is None:
@@ -62,7 +62,7 @@ class BedMap:
     map_id: str
     images: List[CapturedImage]
     stitched_image: Optional[any] = None  # numpy array of stitched image
-    all_objects: List[DetectedObject] = None
+    all_objects: Optional[List[DetectedObject]] = None
     timestamp: Optional[datetime] = None
     
     def __post_init__(self):
