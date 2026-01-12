@@ -11,8 +11,28 @@ CNC object identification and mapping system with pick and place capabilities ba
 - **Coordinate Mapping**: Map detected objects to real-world CNC coordinates
 - **Modular Architecture**: DDD (Domain-Driven Design) with clear separation of concerns
 - **Interactive Testing**: Test individual functions without running the full automation
+- **Touchscreen GUI**: Simple, large-button interface optimized for small Raspberry Pi touchscreens
 
 ## Quick Start
+
+### Touchscreen GUI Mode (Raspberry Pi)
+
+For Raspberry Pi with touchscreen, use the simplified GUI:
+
+```bash
+./run_gui.sh
+```
+
+The touchscreen interface provides:
+- **Large, touch-friendly buttons** for all operations
+- **Real-time status** display
+- **CNC position** monitoring
+- **Simple workflow**: Start Camera → Connect CNC → New Map → Capture → Stitch → Save
+
+Perfect for:
+- Small touchscreens (7" or smaller)
+- Quick operations without keyboard
+- Production environment on the CNC machine
 
 ### Full Application Mode
 
@@ -134,6 +154,7 @@ CNCSorter/
 │   ├── presentation/        # UI and user interaction
 │   │   └── live_display.py  # Live status display for Raspberry Pi
 │   ├── main.py             # Main application entry point
+│   ├── gui_touchscreen.py  # Touchscreen GUI for Raspberry Pi
 │   └── test_menu.py        # Interactive test menu
 ├── tests/                   # Tests and reference code
 │   ├── modules/            # Reference implementations
@@ -141,10 +162,12 @@ CNCSorter/
 │   │   └── main_original.py  # Backup of original code
 │   └── README.md           # Test documentation
 ├── maps/                    # Saved bed maps (created at runtime)
-├── requirements.txt         # Python dependencies
+├── requirements.txt         # Python dependencies (flexible versions)
+├── requirements-lock.txt    # Pinned dependencies (security)
 ├── run.bat                 # Automatic launcher (Windows)
 ├── run.sh                  # Automatic launcher (Mac/Linux)
 ├── run_rpi.sh              # Automatic launcher (Raspberry Pi)
+├── run_gui.sh              # Touchscreen GUI launcher (Raspberry Pi)
 ├── LICENSE                 # MIT License
 ├── agents.md               # Development rules (DDD/SOC)
 └── README.md               # This file
