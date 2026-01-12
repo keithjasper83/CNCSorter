@@ -1,29 +1,33 @@
 # CNCSorter
 
-CNC object identification and eventually pick and place based on computer vision.
+CNC object identification and mapping system with pick and place capabilities based on computer vision.
 
 ## Features
 
-- Real-time object detection using OpenCV
-- Adjustable threshold and minimum area settings
-- Live camera feed with visual feedback
-- Automatic object counting and labeling
-- Snapshot capability for documentation
+- **Real-time Object Detection**: Advanced OpenCV-based detection with adjustable parameters
+- **CNC Integration**: Support for FluidNC via Serial or HTTP communication
+- **Image Mapping**: Capture multiple images and stitch them into a complete bed map
+- **Live Status Display**: Full-screen monitoring optimized for Raspberry Pi
+- **Coordinate Mapping**: Map detected objects to real-world CNC coordinates
+- **Modular Architecture**: DDD (Domain-Driven Design) with clear separation of concerns
+- **Interactive Testing**: Test individual functions without running the full automation
 
 ## Quick Start
 
-### Windows
+### Full Application Mode
+
+#### Windows
 Simply double-click `run.bat` to automatically:
 - Create a virtual environment (if needed)
 - Install required dependencies
-- Launch the application
+- Launch the full application
 
-### Mac/Linux (Development)
+#### Mac/Linux (Development)
 ```bash
 ./run.sh
 ```
 
-### Raspberry Pi (Production)
+#### Raspberry Pi (Production)
 ```bash
 ./run_rpi.sh
 ```
@@ -31,7 +35,33 @@ Simply double-click `run.bat` to automatically:
 All launchers will automatically:
 - Create a virtual environment (if needed)
 - Install required dependencies
-- Launch the application
+- Launch the application with live status display
+
+### Interactive Test Mode
+
+To test individual functions without running the full automation:
+
+```bash
+# Activate virtual environment first
+source venv/bin/activate  # Mac/Linux
+# or
+venv\Scripts\activate  # Windows
+
+# Run the interactive test menu
+cd src
+python test_menu.py
+```
+
+The test menu allows you to:
+1. Test Camera/Vision System
+2. Test Object Detection with live tuning
+3. Test CNC Controller (Serial)
+4. Test CNC Controller (HTTP)
+5. Test Image Capture & Detection
+6. Test Image Stitching
+7. Test Bed Mapping Service
+8. Test Live Status Display
+9. Run Full Application
 
 ## Manual Setup
 
@@ -58,24 +88,67 @@ python src/main.py
 
 ## Usage
 
-- **'s' key**: Save a snapshot of the current frame
-- **'q' key**: Quit the application
-- **Threshold slider**: Adjust detection sensitivity
-- **Min Area slider**: Filter objects by minimum size
+### Full Application Mode
+- **[SPACE]**: Capture image and add to current map
+- **[S]**: Start new bed map
+- **[M]**: Stitch all images in current map
+- **[V]**: Save current map to disk
+- **[Q]**: Quit application
+
+### Command Line Options
+```bash
+python src/main.py [options]
+
+Options:
+  --camera INDEX           Camera device index (default: 0)
+  --cnc-mode MODE         CNC connection: none, serial, http (default: none)
+  --cnc-port PORT         Serial port (default: /dev/ttyUSB0)
+  --cnc-baudrate BAUD     Serial baudrate (default: 115200)
+  --cnc-host HOST         CNC IP address (default: 192.168.1.100)
+  --cnc-http-port PORT    HTTP port (default: 80)
+```
+
+### Example: Connect to CNC via Serial
+```bash
+python src/main.py --cnc-mode serial --cnc-port /dev/ttyUSB0 --cnc-baudrate 115200
+```
+
+### Example: Connect to CNC via HTTP
+```bash
+python src/main.py --cnc-mode http --cnc-host 192.168.1.100
+```
 
 ## Project Structure
 
+Following Domain-Driven Design (DDD) principles:
+
 ```
 CNCSorter/
-├── src/              # Source code
-│   └── main.py       # Main application
-├── requirements.txt  # Python dependencies
-├── run.bat          # Automatic launcher (Windows)
-├── run.sh           # Automatic launcher (Mac/Linux)
-├── run_rpi.sh       # Automatic launcher (Raspberry Pi)
-├── LICENSE          # MIT License
-├── agents.md        # Development rules and guidelines
-└── README.md        # This file
+├── src/                      # Source code
+│   ├── domain/              # Core business entities and logic
+│   │   └── entities.py      # Domain models (CNCCoordinate, DetectedObject, BedMap)
+│   ├── application/         # Use cases and orchestration
+│   │   └── bed_mapping.py   # Bed mapping service
+│   ├── infrastructure/      # Technical implementations
+│   │   ├── vision.py        # Vision system and image stitcher
+│   │   └── cnc_controller.py  # CNC communication (Serial/HTTP)
+│   ├── presentation/        # UI and user interaction
+│   │   └── live_display.py  # Live status display for Raspberry Pi
+│   ├── main.py             # Main application entry point
+│   └── test_menu.py        # Interactive test menu
+├── tests/                   # Tests and reference code
+│   ├── modules/            # Reference implementations
+│   │   ├── main.py         # Original simple implementation
+│   │   └── main_original.py  # Backup of original code
+│   └── README.md           # Test documentation
+├── maps/                    # Saved bed maps (created at runtime)
+├── requirements.txt         # Python dependencies
+├── run.bat                 # Automatic launcher (Windows)
+├── run.sh                  # Automatic launcher (Mac/Linux)
+├── run_rpi.sh              # Automatic launcher (Raspberry Pi)
+├── LICENSE                 # MIT License
+├── agents.md               # Development rules (DDD/SOC)
+└── README.md               # This file
 ```
 
 ## Platform-Specific Notes
