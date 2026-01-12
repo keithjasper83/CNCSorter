@@ -383,3 +383,21 @@ The investment in additional cameras pays off through:
 - Faster detection (parallel processing)
 - Better handling of edge cases
 - Professional-grade results
+
+
+
+
+
+
+%%% full error message whixhndoesnt work in chat
+Starting CNCSorter application...
+Press 's' to save a snapshot, 'q' to quit.
+========================================
+
+Traceback (most recent call last):
+  File "/Users/kjasper/Documents/Development/CNCSorter/src/main.py", line 5, in <module>
+    from src.infrastructure.vision import VisionSystem, ImageStitcher
+ModuleNotFoundError: No module named 'src'
+
+Application closed.
+ Is there some kind of syntax you are unable to read as giu seem tk not be ssding the makn messGe it appears to be suggeting that vision system and image sticher cannot be found . Path is src. Infastructure i can confirm there is a class called that but no file name? Perhaps there is a missing defiition for it
