@@ -565,10 +565,191 @@ tilt = math.atan2(accel_data['y'], accel_data['z']) * 180 / math.pi
 ```
 
 ### Slip Ring for 360° Rotation
-For continuous pan rotation (no cable wrapping):
-- Install slip ring between pan base and rotating platform
-- Allows unlimited rotation in either direction
-- Useful for continuous surveillance or automated scanning
+
+For unlimited continuous pan rotation without cable wrapping, a slip ring is essential for professional setups.
+
+#### Recommended Slip Rings
+
+**Option 1: 6-Wire Miniature Slip Ring (Recommended)** - $15-25
+- **Model**: MT0615 or similar (6 circuits, 15mm bore)
+- **Specifications**:
+  - Diameter: 15mm
+  - Height: 20mm  
+  - Circuits: 6 wires
+  - Current: 2A per circuit (240V max)
+  - Contact Resistance: < 0.01Ω
+  - Rotation Speed: 0-300 RPM
+  - Operating Temperature: -20°C to +80°C
+  - Lifespan: >10 million rotations
+- **Perfect for**: Standard 2-axis gimbal with camera
+- **Cost**: $15-20 on Amazon/AliExpress
+
+**Option 2: 12-Wire Slip Ring** - $25-35
+- **Model**: MT1212 or similar (12 circuits, 22mm bore)
+- **Specifications**:
+  - Diameter: 22mm
+  - Height: 25mm
+  - Circuits: 12 wires
+  - Current: 2A per circuit
+  - Contact Resistance: < 0.01Ω
+- **Perfect for**: Multi-camera setups or LED ring lighting
+- **Cost**: $25-30 on Amazon/AliExpress
+
+**Option 3: Capsule Slip Ring** - $20-30
+- **Model**: SNM-06B or similar (6 circuits, capsule design)
+- **Specifications**:
+  - Diameter: 12.5mm
+  - Height: 28mm (compact capsule)
+  - Circuits: 6 wires
+  - Current: 2A per circuit
+  - Ultra-compact for tight spaces
+- **Perfect for**: Minimal footprint builds
+- **Cost**: $20-25
+
+#### Wire Allocation (6-Circuit Slip Ring)
+
+Typical wiring for 2-axis gimbal:
+1. **Circuit 1**: Servo power (+5V) - Red
+2. **Circuit 2**: Ground (GND) - Black
+3. **Circuit 3**: Pan servo signal (PWM) - Orange
+4. **Circuit 4**: Tilt servo signal (PWM) - Yellow
+5. **Circuit 5**: Camera power (optional) - Green
+6. **Circuit 6**: Spare/Camera data - Blue
+
+For 3-axis gimbal with roll:
+- Add roll servo signal on Circuit 6
+
+For multi-camera or lighting:
+- Use 12-circuit slip ring with additional circuits for:
+  - LED ring power and control
+  - Secondary camera power/data
+  - IMU sensor data lines
+  - Spare circuits for future expansion
+
+#### 3D Print Integration
+
+**Mounting Design**:
+The slip ring mounts between the gimbal base and the pan rotating platform. Updated STL files include:
+
+1. **slip_ring_mount_base.stl** - Stationary side mounts to base
+2. **slip_ring_mount_rotor.stl** - Rotating side mounts to pan bracket
+3. **slip_ring_housing.stl** - Protective cover with cable channels
+
+**Print Settings**:
+```
+Material: PETG (better for slip ring heat)
+Layer Height: 0.2mm
+Infill: 50% (needs strength for bearing load)
+Supports: Yes (for cable channels)
+Walls: 4 perimeters for rigidity
+```
+
+**Design Features**:
+- Precision bore for 15mm slip ring (or 22mm for 12-wire)
+- Integrated ball bearing seat (608ZZ bearing)
+- Cable management channels
+- M3 mounting holes (4×) for slip ring flange
+- Central shaft passage for strength
+- Snap-fit protective cover
+
+#### Installation Steps
+
+1. **Prepare Slip Ring**:
+   - Note which side is stationary vs. rotating
+   - Most slip rings have color-coded wire sets
+   - Test continuity before installation
+
+2. **Mount Stationary Side**:
+   - Insert slip ring into `slip_ring_mount_base.stl`
+   - Secure with M3 screws through mounting holes
+   - Mount base to gimbal base platform
+   - Connect stationary wires to Raspberry Pi GPIO
+
+3. **Mount Rotating Side**:
+   - Attach `slip_ring_mount_rotor.stl` to pan bracket
+   - Ensure concentric alignment with stationary side
+   - Connect rotating wires to servos and camera
+
+4. **Wire Routing**:
+   - **Stationary Side**: Route wires through base to Pi
+   - **Rotating Side**: Route through cable channels in pan bracket
+   - Leave slack for smooth rotation
+   - Use cable clips to prevent snagging
+
+5. **Test Rotation**:
+   - Manually rotate pan bracket 360°
+   - Check for binding or wire interference
+   - Verify electrical continuity through full rotation
+   - Test with multimeter: resistance should stay constant
+
+6. **Install Housing**:
+   - Snap protective cover over slip ring
+   - Secures cables and prevents dust ingress
+
+#### Wiring Diagram with Slip Ring
+
+```
+External 5V Power Supply
+         |
+         ├─→ Slip Ring (Stationary) Circuit 1 (5V)
+         │      ↓
+         │   Slip Ring (Rotating) Circuit 1
+         │      ↓
+         │   ├─→ Pan Servo (Red)
+         │   └─→ Tilt Servo (Red)
+         │
+         └─→ Raspberry Pi GND ←─ Slip Ring Circuit 2 (GND)
+                                       ↓
+                                  Slip Ring (Rotating) Circuit 2
+                                       ↓
+                                  ├─→ Pan Servo (Black)
+                                  └─→ Tilt Servo (Black)
+
+Raspberry Pi GPIO:
+   GP17 (Pin 11) → Slip Ring Circuit 3 → Pan Servo (Orange)
+   GP18 (Pin 12) → Slip Ring Circuit 4 → Tilt Servo (Yellow)
+```
+
+#### Benefits of Slip Ring
+
+- **Unlimited Pan Rotation**: No 180° limits or homing required
+- **No Cable Twist**: Wires never wrap around base
+- **Continuous Scanning**: Perfect for surveillance or 360° mapping
+- **Professional Appearance**: Clean cable management
+- **Reliability**: Millions of rotations rated
+- **Easy Maintenance**: Replaceable if worn
+
+#### Alternatives to Slip Ring
+
+If slip ring is not available:
+1. **Limited Rotation**: Restrict pan to ±90° or ±135°
+2. **Homing Routine**: Return to 0° periodically to unwind cables
+3. **Wireless Power**: Battery-powered servos on rotating platform
+4. **Wireless Control**: Bluetooth/WiFi control module (adds complexity)
+
+**Not Recommended**: Cable spiral wrap alone - causes tension and wear
+
+#### Troubleshooting Slip Ring Issues
+
+**High Resistance/Intermittent Connection**:
+- Clean contacts with isopropyl alcohol
+- Check wire crimps are secure
+- Replace if resistance > 0.05Ω
+
+**Noise on Signal Lines**:
+- Add 0.1µF capacitor between signal and ground
+- Use shielded cable for PWM signals
+- Ensure proper ground connection
+
+**Mechanical Binding**:
+- Check alignment of stationary and rotating sides
+- Verify ball bearing is seated correctly
+- Lubricate slip ring bearing lightly
+
+**Overheating**:
+- Verify current draw is within spec (< 2A per circuit)
+- Check for short circuits
+- Improve ventilation around slip ring
 
 ---
 
