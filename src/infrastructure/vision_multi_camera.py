@@ -75,7 +75,7 @@ class MultiCameraVisionSystem:
         ),
         CameraConfig(
             name="GoPro",
-            source="http://192.168.1.101:8080/video",
+            source=1,  # USB connection (second camera device)
             position="front",
             preview_scale=0.4,
             enabled=False  # Enable when available
@@ -578,10 +578,10 @@ if __name__ == "__main__":
         ),
         CameraConfig(
             name="GoPro",
-            source="http://192.168.1.101:8080/video",
+            source=1,  # USB connection (second USB camera)
             position="front",
             preview_scale=0.4,
-            enabled=False  # Set to True when GoPro is streaming
+            enabled=False  # Set to True when GoPro is connected via USB
         ),
         CameraConfig(
             name="iPad",
