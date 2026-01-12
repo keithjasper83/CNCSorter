@@ -8,9 +8,11 @@ This guide covers the hardware requirements, assembly instructions, and wiring f
 3. [3D Printed Parts](#3d-printed-parts)
 4. [Wiring Diagrams](#wiring-diagrams)
 5. [Assembly Instructions](#assembly-instructions)
-6. [Calibration](#calibration)
-7. [Usage Examples](#usage-examples)
-8. [Troubleshooting](#troubleshooting)
+6. [Slip Ring for 360° Rotation](#slip-ring-for-360-rotation)
+7. [Gyroscope Stabilization](#gyroscope-stabilization-optional-enhancement)
+8. [Calibration](#calibration)
+9. [Usage Examples](#usage-examples)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -570,7 +572,23 @@ For unlimited continuous pan rotation without cable wrapping, a slip ring is ess
 
 #### Recommended Slip Rings
 
-**Option 1: 6-Wire Miniature Slip Ring (Recommended)** - $15-25
+**Option 1: 12-Wire Miniature Slip Ring (PRIMARY RECOMMENDATION)** - £15-20
+- **Model**: The Pi Hut Miniature Slip Ring (12mm diameter, 12 wires)
+- **Product Link**: https://thepihut.com/products/miniature-slip-ring-12mm-diameter-12-wires-max-240v-2a
+- **Specifications**:
+  - Diameter: 12mm (most compact option!)
+  - Height: 20mm  
+  - Circuits: 12 wires (28 AWG, color coded)
+  - Current: 2A per circuit (240VAC/DC max)
+  - Contact Resistance: < 0.01Ω (gold plated contacts)
+  - Rotation Speed: 0-300 RPM (can go faster with reduced lifespan)
+  - Operating Temperature: -20°C to +80°C
+  - Lifespan: >10 million rotations
+- **Perfect for**: Production builds with gyro stabilization and multi-camera
+- **Why Best**: Ultra-compact, 12 circuits for expansion, excellent quality, UK supplier
+- **Cost**: £15-20 from The Pi Hut (UK)
+
+**Option 2: 6-Wire Miniature Slip Ring** - $15-25
 - **Model**: MT0615 or similar (6 circuits, 15mm bore)
 - **Specifications**:
   - Diameter: 15mm
@@ -578,37 +596,50 @@ For unlimited continuous pan rotation without cable wrapping, a slip ring is ess
   - Circuits: 6 wires
   - Current: 2A per circuit (240V max)
   - Contact Resistance: < 0.01Ω
-  - Rotation Speed: 0-300 RPM
-  - Operating Temperature: -20°C to +80°C
-  - Lifespan: >10 million rotations
-- **Perfect for**: Standard 2-axis gimbal with camera
+- **Perfect for**: Basic 2-axis gimbal without extras
 - **Cost**: $15-20 on Amazon/AliExpress
 
-**Option 2: 12-Wire Slip Ring** - $25-35
+**Option 3: 12-Wire Standard Slip Ring** - $25-35
 - **Model**: MT1212 or similar (12 circuits, 22mm bore)
 - **Specifications**:
-  - Diameter: 22mm
+  - Diameter: 22mm (larger)
   - Height: 25mm
   - Circuits: 12 wires
   - Current: 2A per circuit
-  - Contact Resistance: < 0.01Ω
-- **Perfect for**: Multi-camera setups or LED ring lighting
+- **Perfect for**: Builds where size isn't constrained
 - **Cost**: $25-30 on Amazon/AliExpress
 
-**Option 3: Capsule Slip Ring** - $20-30
-- **Model**: SNM-06B or similar (6 circuits, capsule design)
-- **Specifications**:
-  - Diameter: 12.5mm
-  - Height: 28mm (compact capsule)
-  - Circuits: 6 wires
-  - Current: 2A per circuit
-  - Ultra-compact for tight spaces
-- **Perfect for**: Minimal footprint builds
-- **Cost**: $20-25
+#### Wire Allocation (12-Circuit Slip Ring - Recommended)
+
+**The Pi Hut 12-wire model provides maximum flexibility:**
+
+**Core Servo Circuits** (6 wires):
+1. **Circuit 1**: Servo power (+5V) - Red
+2. **Circuit 2**: Ground (GND) - Black  
+3. **Circuit 3**: Pan servo signal (PWM) - Orange
+4. **Circuit 4**: Tilt servo signal (PWM) - Yellow
+5. **Circuit 5**: Roll servo signal (PWM) - Optional, for 3-axis
+6. **Circuit 6**: Common ground return - Black/Brown
+
+**Gyroscope/Sensor Circuits** (4 wires):
+7. **Circuit 7**: Gyro power (3.3V) - Red/White
+8. **Circuit 8**: Gyro ground (GND) - Black/White
+9. **Circuit 9**: I2C SDA (data) - Green
+10. **Circuit 10**: I2C SCL (clock) - Blue
+
+**Camera/Expansion Circuits** (2 wires):
+11. **Circuit 11**: Camera power (5V) or LED ring - White
+12. **Circuit 12**: Camera data or spare - Gray
+
+**Benefits of 12-wire configuration**:
+- All servos powered independently
+- Dedicated gyro circuits for stabilization
+- Camera power without voltage drop
+- Future expansion (LED ring, encoders, additional sensors)
 
 #### Wire Allocation (6-Circuit Slip Ring)
 
-Typical wiring for 2-axis gimbal:
+For budget builds using 6-wire slip rings:
 1. **Circuit 1**: Servo power (+5V) - Red
 2. **Circuit 2**: Ground (GND) - Black
 3. **Circuit 3**: Pan servo signal (PWM) - Orange
@@ -616,8 +647,7 @@ Typical wiring for 2-axis gimbal:
 5. **Circuit 5**: Camera power (optional) - Green
 6. **Circuit 6**: Spare/Camera data - Blue
 
-For 3-axis gimbal with roll:
-- Add roll servo signal on Circuit 6
+**Note**: 6-wire limits you to 2-axis without gyro. For gyro stabilization, use 12-wire model.
 
 For multi-camera or lighting:
 - Use 12-circuit slip ring with additional circuits for:
@@ -750,6 +780,123 @@ If slip ring is not available:
 - Verify current draw is within spec (< 2A per circuit)
 - Check for short circuits
 - Improve ventilation around slip ring
+
+---
+
+## Gyroscope Stabilization (Optional Enhancement)
+
+### Overview
+
+Adding a gyroscope sensor enables automatic horizon leveling and vibration compensation, crucial for high-quality image capture on CNC machines with moving parts.
+
+### Recommended Gyroscopes
+
+**MPU6050 (Budget Option)** - £3-5
+- 3-axis gyroscope + 3-axis accelerometer
+- I2C interface (easy Pi integration)
+- ±250 to ±2000°/s gyro range
+- Built-in temperature sensor
+- Perfect for: Basic horizon leveling
+
+**MPU9250 (Advanced Option)** - £8-12
+- 9-axis: gyro + accelerometer + magnetometer
+- Better accuracy than MPU6050
+- Compass for absolute heading
+- Perfect for: Precise orientation tracking
+
+**BNO055 (Professional Option)** - £15-20
+- 9-axis with built-in sensor fusion
+- Hardware-based orientation calculation
+- Quaternion output (no gimbal lock)
+- Perfect for: Production systems requiring high accuracy
+
+### Features Enabled by Gyroscope
+
+1. **Horizon Leveling**: Automatically compensate for CNC bed tilt
+2. **Vibration Damping**: Filter out machine vibrations in real-time
+3. **Drift Correction**: Maintain stable camera orientation during long operations
+4. **Active Stabilization**: Servo-based compensation for movement
+5. **Absolute Positioning**: Know exact camera orientation at all times
+
+### Wiring (I2C Connection)
+
+**With 12-wire Slip Ring** (Recommended):
+```
+MPU6050/MPU9250:
+   VCC  → Slip Ring Circuit 7  → Pi 3.3V (Pin 1)
+   GND  → Slip Ring Circuit 8  → Pi GND (Pin 6)
+   SDA  → Slip Ring Circuit 9  → Pi GPIO 2 (Pin 3)
+   SCL  → Slip Ring Circuit 10 → Pi GPIO 3 (Pin 5)
+```
+
+**Without Slip Ring** (Fixed Mount):
+- Mount gyro on gimbal base (non-rotating)
+- Direct connection to Pi I2C pins
+- No slip ring circuits needed
+
+### Software Integration
+
+The gyro data can be read via I2C and used to adjust servo positions:
+
+```python
+from infrastructure.gimbal_controller import TwoAxisGimbal
+from infrastructure.gyro_stabilizer import GyroStabilizer
+
+# Initialize gimbal and gyro
+gimbal = TwoAxisGimbal(pan_pin=17, tilt_pin=18)
+stabilizer = GyroStabilizer(i2c_address=0x68)  # MPU6050 default
+
+# Enable auto-leveling
+stabilizer.enable_auto_level()
+
+while True:
+    # Read gyro orientation
+    pitch, roll, yaw = stabilizer.get_orientation()
+    
+    # Compensate gimbal position
+    gimbal.set_tilt(target_tilt + pitch)  # Correct for pitch
+    gimbal.set_roll(target_roll + roll)    # Correct for roll (3-axis only)
+    
+    time.sleep(0.01)  # 100Hz update rate
+```
+
+### Mounting Location
+
+**Rotating Platform** (requires slip ring):
+- Measures actual camera orientation
+- Best for active stabilization
+- Requires 4 slip ring circuits
+
+**Gimbal Base** (no slip ring needed):
+- Measures machine/base vibration
+- Good for drift correction
+- Simpler wiring
+
+### Calibration
+
+1. **Place gimbal on level surface**
+2. **Run calibration script**:
+```bash
+python src/gyro_calibrate.py
+```
+3. **Record zero position offsets**
+4. **Test with known tilt angles**
+
+### Benefits
+
+✅ **Image Quality**: Sharper images from vibration compensation
+✅ **Consistency**: Repeatable orientations across sessions
+✅ **Flexibility**: Works on unlevel CNC beds
+✅ **Professionalism**: Active stabilization like commercial gimbals
+✅ **Future-Proof**: Foundation for advanced features (object tracking, etc.)
+
+### Integration with CNCSorter
+
+The gyroscope data can be logged alongside detection data:
+- Track camera orientation for each capture
+- Enable 3D reconstruction with known angles
+- Verify gimbal positioning accuracy
+- Detect mechanical issues (drift, binding)
 
 ---
 
