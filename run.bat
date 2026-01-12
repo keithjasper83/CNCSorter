@@ -33,7 +33,15 @@ if errorlevel 1 (
 REM Install/update dependencies
 echo Checking and installing dependencies...
 python -m pip install --upgrade pip >nul 2>&1
-pip install -r requirements.txt
+
+REM Use pinned requirements for security
+if exist requirements-lock.txt (
+    echo Installing from pinned requirements for security...
+    pip install -r requirements-lock.txt
+) else (
+    echo Installing from requirements.txt...
+    pip install -r requirements.txt
+)
 if errorlevel 1 (
     echo Warning: Some dependencies may not have installed correctly.
     echo.

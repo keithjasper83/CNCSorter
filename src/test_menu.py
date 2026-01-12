@@ -495,8 +495,24 @@ class InteractiveTestMenu:
         print("=" * 60)
         print("\nLaunching full CNCSorter application...")
         
-        from main import main
-        main()
+        try:
+            from main import main as app_main
+        except ImportError as e:
+            print("❌ Failed to import the main application module 'main'.")
+            print(f"   Details: {e}")
+            print("   Make sure that 'main.py' is present and importable.")
+            return
+        except Exception as e:
+            # Catch any other unexpected errors during import (e.g., runtime errors in module code)
+            print("❌ An unexpected error occurred while importing the main application module.")
+            print(f"   Details: {e}")
+            return
+
+        try:
+            app_main()
+        except Exception as e:
+            print("❌ An error occurred while running the full CNCSorter application.")
+            print(f"   Details: {e}")
     
     def run(self):
         """Run the interactive test menu."""

@@ -44,8 +44,14 @@ echo "Checking and installing dependencies..."
 echo "Note: OpenCV installation on Raspberry Pi may take several minutes..."
 python -m pip install --upgrade pip > /dev/null 2>&1
 
-# Check if we need to install from requirements
-pip install -r requirements.txt
+# Use pinned requirements for security
+if [ -f "requirements-lock.txt" ]; then
+    echo "Installing from pinned requirements for security..."
+    pip install -r requirements-lock.txt
+else
+    echo "Installing from requirements.txt..."
+    pip install -r requirements.txt
+fi
 if [ $? -ne 0 ]; then
     echo "Warning: Some dependencies may not have installed correctly."
     echo ""

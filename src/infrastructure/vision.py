@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 from typing import List, Tuple, Optional
 from ..domain.entities import DetectedObject, Point2D, CapturedImage, CNCCoordinate
-from datetime import datetime
 
 
 class VisionSystem:
@@ -102,7 +101,7 @@ class VisionSystem:
                     cx = M["m10"] / M["m00"]
                     cy = M["m01"] / M["m00"]
                 else:
-                    cx, cy = x + w // 2, y + h // 2
+                    cx, cy = x + w / 2.0, y + h / 2.0
                 
                 # Convert contour to list of tuples
                 contour_points = [(int(pt[0][0]), int(pt[0][1])) for pt in cnt]

@@ -83,17 +83,49 @@ class FluidNCSerial(CNCController):
         
         try:
             self.serial_connection.write(b'?\n')
-            response = self.serial_connection.readline().decode('utf-8').strip()
+            response_bytes = self.serial_connection.readline()
+            
+            if not response_bytes:
+                # Timeout or no data received
+                print("No response received from FluidNC when requesting position")
+                return None
+                
+            try:
+                response = response_bytes.decode('utf-8').strip()
+            except UnicodeDecodeError as e:
+                print(f"Error decoding position response from FluidNC: {e}")
+                return None
+            
+            if not response:
+                print("Empty response received from FluidNC when requesting position")
+                return None
             
             # Parse response like: <Idle|MPos:0.000,0.000,0.000|...>
-            if 'MPos:' in response:
-                pos_str = response.split('MPos:')[1].split('|')[0]
-                coords = pos_str.split(',')
-                return CNCCoordinate(
-                    x=float(coords[0]),
-                    y=float(coords[1]),
-                    z=float(coords[2]) if len(coords) > 2 else 0.0
-                )
+            if 'MPos:' not in response:
+                print(f"Unexpected position response format from FluidNC: {response}")
+                return None
+
+            pos_section = response.split('MPos:', 1)[1]
+            # Only take up to the next '|' if present
+            if '|' in pos_section:
+                pos_str = pos_section.split('|', 1)[0]
+            else:
+                pos_str = pos_section
+
+            coords = [c.strip() for c in pos_str.split(',') if c.strip() != ""]
+            if len(coords) < 2:
+                print(f"Incomplete coordinate data in FluidNC response: {response}")
+                return None
+
+            try:
+                x = float(coords[0])
+                y = float(coords[1])
+                z = float(coords[2]) if len(coords) > 2 else 0.0
+            except (ValueError, IndexError) as e:
+                print(f"Error parsing coordinate values from FluidNC response '{response}': {e}")
+                return None
+
+            return CNCCoordinate(x=x, y=y, z=z)
         except Exception as e:
             print(f"Error getting position: {e}")
         
@@ -157,17 +189,49 @@ class FluidNCHTTP(CNCController):
         try:
             # FluidNC HTTP API endpoint for position status
             response = requests.get(f'{self.base_url}/command?commandText=?', timeout=2)
-            if response.status_code == 200:
-                data = response.text
-                # Parse response similar to serial version
-                if 'MPos:' in data:
-                    pos_str = data.split('MPos:')[1].split('|')[0]
-                    coords = pos_str.split(',')
-                    return CNCCoordinate(
-                        x=float(coords[0]),
-                        y=float(coords[1]),
-                        z=float(coords[2]) if len(coords) > 2 else 0.0
-                    )
+            if response.status_code != 200:
+                print(f"HTTP request failed with status code: {response.status_code}")
+                return None
+            
+            # Validate content type
+            content_type = response.headers.get('content-type', '')
+            if 'text' not in content_type.lower() and 'application' not in content_type.lower():
+                print(f"Unexpected content type from FluidNC HTTP: {content_type}")
+                return None
+            
+            data = response.text
+            if not data:
+                print("Empty response from FluidNC HTTP")
+                return None
+            
+            # Parse response similar to serial version
+            if 'MPos:' not in data:
+                print(f"Unexpected HTTP response format from FluidNC: {data}")
+                return None
+            
+            pos_section = data.split('MPos:', 1)[1]
+            # Only take up to the next '|' if present
+            if '|' in pos_section:
+                pos_str = pos_section.split('|', 1)[0]
+            else:
+                pos_str = pos_section
+            
+            coords = [c.strip() for c in pos_str.split(',') if c.strip() != ""]
+            if len(coords) < 2:
+                print(f"Incomplete coordinate data in HTTP response: {data}")
+                return None
+            
+            try:
+                x = float(coords[0])
+                y = float(coords[1])
+                z = float(coords[2]) if len(coords) > 2 else 0.0
+            except (ValueError, IndexError) as e:
+                print(f"Error parsing coordinate values from HTTP response '{data}': {e}")
+                return None
+            
+            return CNCCoordinate(x=x, y=y, z=z)
+        except requests.RequestException as e:
+            print(f"HTTP request error getting position: {e}")
         except Exception as e:
             print(f"Error getting position via HTTP: {e}")
         

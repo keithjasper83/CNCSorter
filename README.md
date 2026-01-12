@@ -47,9 +47,8 @@ source venv/bin/activate  # Mac/Linux
 # or
 venv\Scripts\activate  # Windows
 
-# Run the interactive test menu
-cd src
-python test_menu.py
+# Run the interactive test menu from project root
+python src/test_menu.py
 ```
 
 The test menu allows you to:

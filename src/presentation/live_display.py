@@ -1,9 +1,9 @@
 """Live status display for Raspberry Pi with full process monitoring."""
 import cv2
 import numpy as np
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from datetime import datetime
-from ..domain.entities import DetectedObject, CNCCoordinate, BedMap
+from ..domain.entities import DetectedObject, CNCCoordinate
 
 
 class LiveStatusDisplay:

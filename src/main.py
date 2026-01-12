@@ -1,9 +1,7 @@
 """Main application entry point with live status display."""
-import sys
 import time
 from typing import Optional
 
-from domain.entities import CNCCoordinate
 from infrastructure.vision import VisionSystem, ImageStitcher
 from infrastructure.cnc_controller import FluidNCSerial, FluidNCHTTP, CNCController
 from application.bed_mapping import BedMappingService

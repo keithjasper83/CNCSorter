@@ -1,10 +1,11 @@
 """Use cases for bed mapping and object detection."""
 from typing import List, Optional, Callable
 from datetime import datetime
-import uuid
-import numpy as np
+import os
+import re
+import cv2
 
-from ..domain.entities import BedMap, CapturedImage, CNCCoordinate, DetectedObject
+from ..domain.entities import BedMap, CapturedImage, DetectedObject
 from ..infrastructure.vision import VisionSystem, ImageStitcher
 from ..infrastructure.cnc_controller import CNCController
 
@@ -150,6 +151,24 @@ class BedMappingService:
             return []
         return self.current_map.all_objects
     
+    def _sanitize_path_component(self, component: str) -> str:
+        """
+        Sanitize a string so it is safe to use as a single filesystem path component.
+        Prevents path traversal and ensures valid filenames.
+        """
+        # Ensure we are working with a string
+        component_str = str(component)
+        # Drop any directory parts to mitigate path traversal
+        component_str = os.path.basename(component_str)
+        # Remove explicit parent directory references
+        component_str = component_str.replace("..", "")
+        # Allow only a safe subset of characters; replace others with underscore
+        sanitized = re.sub(r"[^A-Za-z0-9._-]", "_", component_str)
+        # Ensure we never return an empty name
+        if not sanitized:
+            sanitized = f"item_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        return sanitized
+    
     def save_map_images(self, output_dir: str = "maps") -> bool:
         """
         Save all images and stitched result to disk.
@@ -160,20 +179,19 @@ class BedMappingService:
         Returns:
             True if successful
         """
-        import os
-        import cv2
-        
         if self.current_map is None:
             return False
         
         # Create output directory
         os.makedirs(output_dir, exist_ok=True)
-        map_dir = os.path.join(output_dir, self.current_map.map_id)
+        safe_map_id = self._sanitize_path_component(self.current_map.map_id)
+        map_dir = os.path.join(output_dir, safe_map_id)
         os.makedirs(map_dir, exist_ok=True)
         
         # Save individual images
         for img in self.current_map.images:
-            filename = os.path.join(map_dir, f"{img.image_id}.jpg")
+            safe_image_id = self._sanitize_path_component(img.image_id)
+            filename = os.path.join(map_dir, f"{safe_image_id}.jpg")
             cv2.imwrite(filename, img.image_data)
             print(f"Saved {filename}")
         

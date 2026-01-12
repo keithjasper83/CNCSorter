@@ -1,7 +1,8 @@
 """Domain entities for CNCSorter."""
-from dataclasses import dataclass
-from typing import List, Tuple, Optional
+from dataclasses import dataclass, field
+from typing import List, Tuple, Optional, Any
 from datetime import datetime
+import numpy as np
 
 
 @dataclass
@@ -44,7 +45,7 @@ class DetectedObject:
 class CapturedImage:
     """Represents a captured image from the camera."""
     image_id: str
-    image_data: any  # numpy array
+    image_data: np.ndarray  # numpy array
     cnc_position: Optional[CNCCoordinate] = None
     timestamp: Optional[datetime] = None
     detected_objects: Optional[List[DetectedObject]] = None
@@ -60,8 +61,8 @@ class CapturedImage:
 class BedMap:
     """Represents the complete map of the CNC bed with all detected objects."""
     map_id: str
-    images: List[CapturedImage]
-    stitched_image: Optional[any] = None  # numpy array of stitched image
+    images: List[CapturedImage] = field(default_factory=list)
+    stitched_image: Optional[np.ndarray] = None  # numpy array of stitched image
     all_objects: Optional[List[DetectedObject]] = None
     timestamp: Optional[datetime] = None
     
