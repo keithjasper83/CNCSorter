@@ -288,7 +288,7 @@ class LiveStatusDisplay:
         )
         
         # Control hints
-        controls = "Controls: [SPACE] Capture Image | [S] Start Map | [M] Stitch Map | [Q] Quit"
+        controls = "Controls: [SPACE] Capture | [S] Start Map | [M] Stitch | [V] Save | [Q] Quit"
         cv2.putText(
             canvas,
             controls,

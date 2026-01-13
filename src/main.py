@@ -212,70 +212,127 @@ class CNCSorterApp:
                 
                 elif key == ord('s'):
                     # Start new map
-                    print("Starting new bed map...")
+                    print("\n[KEY: S] Starting new bed map...")
                     current_map = self.bed_mapping_service.start_new_map()
                     self.display.update(
-                        status="New bed map started",
+                        status="✓ New bed map started - Press SPACE to capture images",
                         stage="MAPPING",
                         progress=0
                     )
-                    time.sleep(1)
+                    print("✓ Bed map started successfully")
+                    time.sleep(1.5)
                 
-                elif key == ord(' ') and current_map is not None:
-                    # Capture image
-                    print("Capturing image...")
-                    self.display.update(status="Capturing image...", stage="CAPTURING")
-                    self.display.wait_key(100)
-                    
-                    captured = self.bed_mapping_service.capture_and_add_image(
-                        threshold=self.threshold,
-                        min_area=self.min_area,
-                        progress_callback=lambda msg: self.display.update(status=msg)
-                    )
-                    
-                    if captured:
-                        progress = min(90, len(current_map.images) * 10)
+                elif key == ord(' '):
+                    if current_map is None:
+                        print("\n[KEY: SPACE] ERROR: No active map! Press 'S' to start a new map first")
                         self.display.update(
-                            status=f"Image captured: {len(captured.detected_objects)} objects",
-                            stage="MAPPING",
-                            progress=progress
-                        )
-                    time.sleep(0.5)
-                
-                elif key == ord('m') and current_map is not None and len(current_map.images) >= 2:
-                    # Stitch images
-                    print("Stitching images...")
-                    self.display.update(status="Stitching images...", stage="STITCHING", progress=50)
-                    self.display.wait_key(100)
-                    
-                    success = self.bed_mapping_service.stitch_current_map(
-                        progress_callback=lambda msg: self.display.update(status=msg)
-                    )
-                    
-                    if success:
-                        self.display.update(
-                            status="Stitching complete!",
-                            stage="COMPLETE",
-                            progress=100
-                        )
-                    else:
-                        self.display.update(
-                            status="Stitching failed",
+                            status="⚠ Cannot capture: Start a map first (Press S)",
                             stage="ERROR"
                         )
-                    time.sleep(2)
-                
-                elif key == ord('v') and current_map is not None:
-                    # Save map
-                    print("Saving map...")
-                    self.display.update(status="Saving map to disk...", stage="PROCESSING")
-                    self.display.wait_key(100)
-                    
-                    if self.bed_mapping_service.save_map_images():
-                        self.display.update(status="Map saved successfully!", stage="COMPLETE")
+                        time.sleep(2)
                     else:
-                        self.display.update(status="Failed to save map", stage="ERROR")
-                    time.sleep(2)
+                        # Capture image
+                        print(f"\n[KEY: SPACE] Capturing image {len(current_map.images) + 1}...")
+                        self.display.update(status="📷 Capturing image...", stage="CAPTURING")
+                        self.display.wait_key(100)
+                        
+                        captured = self.bed_mapping_service.capture_and_add_image(
+                            threshold=self.threshold,
+                            min_area=self.min_area,
+                            progress_callback=lambda msg: self.display.update(status=msg)
+                        )
+                        
+                        if captured:
+                            progress = min(90, len(current_map.images) * 10)
+                            status_msg = f"✓ Image {len(current_map.images)} captured: {len(captured.detected_objects)} objects"
+                            self.display.update(
+                                status=status_msg,
+                                stage="MAPPING",
+                                progress=progress
+                            )
+                            print(status_msg)
+                        else:
+                            print("✗ Failed to capture image")
+                        time.sleep(1)
+                
+                elif key == ord('m'):
+                    if current_map is None:
+                        print("\n[KEY: M] ERROR: No active map! Press 'S' to start a new map first")
+                        self.display.update(
+                            status="⚠ Cannot stitch: Start a map first (Press S)",
+                            stage="ERROR"
+                        )
+                        time.sleep(2)
+                    elif len(current_map.images) < 2:
+                        print(f"\n[KEY: M] ERROR: Need at least 2 images, currently have {len(current_map.images)}")
+                        self.display.update(
+                            status=f"⚠ Need at least 2 images to stitch (have {len(current_map.images)})",
+                            stage="ERROR"
+                        )
+                        time.sleep(2)
+                    else:
+                        # Stitch images
+                        print(f"\n[KEY: M] Stitching {len(current_map.images)} images...")
+                        self.display.update(
+                            status=f"🔗 Stitching {len(current_map.images)} images...",
+                            stage="STITCHING",
+                            progress=50
+                        )
+                        self.display.wait_key(100)
+                        
+                        success = self.bed_mapping_service.stitch_current_map(
+                            progress_callback=lambda msg: self.display.update(status=msg)
+                        )
+                        
+                        if success:
+                            self.display.update(
+                                status="✓ Stitching complete!",
+                                stage="COMPLETE",
+                                progress=100
+                            )
+                            print("✓ Stitching completed successfully")
+                        else:
+                            self.display.update(
+                                status="✗ Stitching failed",
+                                stage="ERROR"
+                            )
+                            print("✗ Stitching failed")
+                        time.sleep(2)
+                
+                elif key == ord('v'):
+                    if current_map is None:
+                        print("\n[KEY: V] ERROR: No active map! Press 'S' to start a new map first")
+                        self.display.update(
+                            status="⚠ Cannot save: No active map (Press S to start)",
+                            stage="ERROR"
+                        )
+                        time.sleep(2)
+                    elif len(current_map.images) == 0:
+                        print("\n[KEY: V] ERROR: No images to save!")
+                        self.display.update(
+                            status="⚠ Cannot save: No images captured yet",
+                            stage="ERROR"
+                        )
+                        time.sleep(2)
+                    else:
+                        # Save map
+                        print(f"\n[KEY: V] Saving map with {len(current_map.images)} images...")
+                        self.display.update(status="💾 Saving map to disk...", stage="PROCESSING")
+                        self.display.wait_key(100)
+                        
+                        if self.bed_mapping_service.save_map_images():
+                            self.display.update(
+                                status=f"✓ Map saved! ({len(current_map.images)} images)",
+                                stage="COMPLETE"
+                            )
+                            print("✓ Map saved successfully")
+                        else:
+                            self.display.update(
+                                status="✗ Failed to save map",
+                                stage="ERROR"
+                            )
+                            print("✗ Failed to save map")
+                        time.sleep(2)
         
         except KeyboardInterrupt:
             print("\nInterrupted by user")
