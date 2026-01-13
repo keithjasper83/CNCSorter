@@ -6,25 +6,32 @@
 
 **Error**: `Could not find the Qt platform plugin "wayland" in ...`
 
-**Cause**: OpenCV tries to use GUI/display features on a headless or improperly configured Raspberry Pi.
+**Cause**: OpenCV tries to find Qt plugins but the warning is usually harmless if you have a display connected.
+
+**Important**: This is typically just a **warning** and does NOT prevent the system from working with a display.
 
 **Solutions**:
 
-#### Option A: Set Environment Variable (Recommended)
+#### Option A: Ignore the Warning (Recommended if you have a display)
+If you have a monitor connected to your Raspberry Pi, this warning can be safely ignored. The application will still display video feeds and GUIs properly using the default display backend.
+
+#### Option B: For Truly Headless Systems (SSH without X forwarding)
+**ONLY use this if you're running without any display:**
 ```bash
 export QT_QPA_PLATFORM=offscreen
 ./run_rpi.sh
 ```
 
-#### Option B: Permanent Fix
-Add to your `~/.bashrc`:
-```bash
-echo 'export QT_QPA_PLATFORM=offscreen' >> ~/.bashrc
-source ~/.bashrc
-```
+**Warning**: Setting `QT_QPA_PLATFORM=offscreen` disables all GUI windows. Only use this for:
+- Headless SSH sessions without X11 forwarding
+- Systems running without any display hardware
+- Automated/batch processing scenarios
 
-#### Option C: Use run_rpi.sh (Now includes fix automatically)
-The updated `run_rpi.sh` script now sets this automatically.
+#### Option C: Install Qt Platform Plugins (if needed)
+```bash
+sudo apt-get update
+sudo apt-get install -y libqt5gui5 qtwayland5 libqt5widgets5
+```
 
 ### 2. Missing Fonts (Hershey Bold, etc.)
 

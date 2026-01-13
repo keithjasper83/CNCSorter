@@ -242,12 +242,12 @@ The launcher scripts automatically handle the correct execution from the reposit
 
 ### Raspberry Pi Specific Issues
 
-For Raspberry Pi-specific troubleshooting (Qt platform errors, font issues, performance optimization), see:
+For Raspberry Pi-specific troubleshooting (Qt warnings, camera issues, performance optimization), see:
 - **[RPI_TROUBLESHOOTING.md](RPI_TROUBLESHOOTING.md)** - Comprehensive Raspberry Pi troubleshooting guide
 
-Common fixes include:
-- Setting `export QT_QPA_PLATFORM=offscreen` for headless operation
-- Using system OpenCV packages for better performance
+**Important Note**: Qt platform plugin warnings (like "Could not find Qt platform plugin 'wayland'") are usually harmless and can be ignored if you have a display connected. The system will work normally with video display and GUI features.
+
+**Only use headless mode** (`export QT_QPA_PLATFORM=offscreen`) if running without any display via SSH.
 - Adjusting swap space for memory-constrained operations
 
 For more detailed documentation, see:

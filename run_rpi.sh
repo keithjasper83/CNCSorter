@@ -8,10 +8,12 @@ echo "Object Detection System"
 echo "========================================"
 echo ""
 
-# Set environment variables for headless/display operation
-# Prevents Qt platform plugin errors
-export QT_QPA_PLATFORM=offscreen
+# Set environment variables for display operation
+# Allow Qt to use X11 display while preventing Windows-specific video I/O
 export OPENCV_VIDEOIO_PRIORITY_MSMF=0
+
+# Optional: Uncomment below ONLY if running truly headless (SSH without X forwarding)
+# export QT_QPA_PLATFORM=offscreen
 
 # Check if running on Raspberry Pi
 if [ -f /proc/device-tree/model ]; then
