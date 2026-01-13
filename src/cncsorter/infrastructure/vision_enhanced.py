@@ -108,8 +108,6 @@ class EnhancedVisionSystem:
         Returns:
             True if camera opened successfully
         """
-        source = self.config["SOURCE"]
-
         try:
             if self.source_type == SourceType.PI_CAMERA:
                 # Use picamera2 for Raspberry Pi Camera Module

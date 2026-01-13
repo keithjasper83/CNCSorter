@@ -1,14 +1,13 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import json
-from pathlib import Path
 
 # Add src to python path if not already
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
 
-from desktop_interface import DesktopInterface, SystemConfig, CameraConfig
+from desktop_interface import DesktopInterface
 
 class TestDesktopInterface:
     """Tests for the Desktop Operator Interface."""
@@ -77,7 +76,7 @@ class TestDesktopInterface:
     def test_event_subscription(self, mock_ui, mock_event_bus, mock_repo):
         """Test that event handlers are subscribed."""
         with patch('pathlib.Path.exists', return_value=False):
-            interface = DesktopInterface()
+            DesktopInterface()
 
             # Verify subscribe was called
             assert mock_event_bus.return_value.subscribe.call_count >= 2

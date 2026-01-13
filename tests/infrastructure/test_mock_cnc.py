@@ -1,11 +1,9 @@
 """Tests for MockCNCController."""
-import pytest
 import time
 from unittest.mock import MagicMock
 
 from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
 from cncsorter.domain.entities import CNCCoordinate
-from cncsorter.application.events import EventBus, CNCPositionUpdated
 
 
 class TestMockCNCController:

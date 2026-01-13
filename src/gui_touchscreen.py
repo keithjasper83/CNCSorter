@@ -1,8 +1,6 @@
 """Touchscreen GUI for Raspberry Pi - Simple, touch-friendly interface."""
 import tkinter as tk
-from tkinter import ttk, messagebox
-import threading
-import time
+from tkinter import messagebox
 from typing import Optional
 from datetime import datetime
 
@@ -432,7 +430,7 @@ python src/main.py
 def main():
     """Main entry point for touchscreen GUI."""
     root = tk.Tk()
-    app = TouchscreenGUI(root)
+    TouchscreenGUI(root)
     root.mainloop()
 
 
