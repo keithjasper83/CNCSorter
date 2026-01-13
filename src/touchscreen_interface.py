@@ -4,6 +4,8 @@ NiceGUI Touchscreen Interface for CNCSorter.
 
 Production-ready touchscreen interface optimized for Freenove display.
 Features touch-optimized controls, no keyboard input, comprehensive configuration.
+
+Supports simulator mode for testing on Mac without hardware.
 """
 
 from nicegui import ui, app
@@ -12,12 +14,17 @@ import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from datetime import datetime
+import sys
+import argparse
 
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
 from cncsorter.domain.interfaces import WorkStatus
 from cncsorter import config
+
+# Check for simulator mode
+SIMULATOR_MODE = '--simulator' in sys.argv or '--sim' in sys.argv
 
 
 @dataclass
@@ -66,7 +73,14 @@ class TouchscreenInterface:
         self.current_page = "home"
         self.detected_count = 0
         self.cycle_progress = 0.0
-        self.system_status = "IDLE"
+        self.system_status = "SIMULATOR" if SIMULATOR_MODE else "IDLE"
+        
+        # Hardware connections (None in simulator mode)
+        self.vision_system = None
+        self.cnc_controller = None
+        self.camera_active = False
+        self.cnc_connected = False
+        self.current_map = None
         
         # Load configuration
         self.load_configuration()
@@ -74,6 +88,14 @@ class TouchscreenInterface:
         # Subscribe to events
         self.event_bus.subscribe(ObjectsDetected, self.on_objects_detected)
         self.event_bus.subscribe(BedMapCompleted, self.on_bed_map_completed)
+        
+        # Show simulator mode notification
+        if SIMULATOR_MODE:
+            print("=" * 60)
+            print("SIMULATOR MODE ENABLED")
+            print("Running without hardware - perfect for Mac testing!")
+            print("All controls are functional but won't affect real hardware.")
+            print("=" * 60)
     
     def load_configuration(self) -> None:
         """Load configuration from file."""
@@ -161,6 +183,51 @@ class TouchscreenInterface:
     
     def create_home_page(self) -> None:
         """Create home page with main controls."""
+        # Simulator mode banner
+        if SIMULATOR_MODE:
+            with ui.card().classes('w-full bg-yellow-900 p-4 mb-4'):
+                ui.label('🖥️ SIMULATOR MODE - Perfect for Mac Testing!').classes(
+                    'text-xl font-bold text-yellow-200'
+                )
+                ui.label('All controls functional without hardware').classes('text-yellow-300')
+        
+        # Hardware Control Card
+        with ui.card().classes('w-full bg-gray-800 p-6 mb-4'):
+            ui.label('Hardware Control').classes('text-xl font-bold text-white mb-4')
+            
+            with ui.row().classes('w-full gap-4'):
+                # Camera controls
+                with ui.column().classes('flex-1'):
+                    camera_status = '✓ Active' if self.camera_active else '○ Inactive'
+                    ui.label(f'Camera: {camera_status}').classes('text-white mb-2')
+                    
+                    if not self.camera_active:
+                        ui.button(
+                            '📷 START CAMERA',
+                            on_click=self.start_camera
+                        ).props('size=md color=positive').classes('w-full')
+                    else:
+                        ui.button(
+                            '⏹️ STOP CAMERA',
+                            on_click=self.stop_camera
+                        ).props('size=md color=warning').classes('w-full')
+                
+                # CNC controls
+                with ui.column().classes('flex-1'):
+                    cnc_status = '✓ Connected' if self.cnc_connected else '○ Disconnected'
+                    ui.label(f'CNC: {cnc_status}').classes('text-white mb-2')
+                    
+                    if not self.cnc_connected:
+                        ui.button(
+                            '🔌 CONNECT CNC',
+                            on_click=self.connect_cnc
+                        ).props('size=md color=primary').classes('w-full')
+                    else:
+                        ui.button(
+                            '🔌 DISCONNECT CNC',
+                            on_click=self.disconnect_cnc
+                        ).props('size=md color=warning').classes('w-full')
+        
         # Status card
         with ui.card().classes('w-full bg-gray-800 p-6'):
             ui.label('System Status').classes('text-2xl font-bold text-white mb-4')
@@ -168,9 +235,11 @@ class TouchscreenInterface:
             # Current status
             status_color = {
                 'IDLE': 'blue',
+                'SIMULATOR': 'yellow',
                 'SCANNING': 'yellow',
                 'COMPLETE': 'green',
-                'ERROR': 'red'
+                'ERROR': 'red',
+                'STOPPED': 'red'
             }.get(self.system_status, 'gray')
             
             ui.label(f'Status: {self.system_status}').classes(
@@ -430,7 +499,125 @@ class TouchscreenInterface:
         ui.notify('🛑 EMERGENCY STOP ACTIVATED', type='negative')
         self.system_status = "STOPPED"
         self.cycle_progress = 0.0
-        # TODO: Integrate with CNC controller
+        
+        if SIMULATOR_MODE:
+            ui.notify('(Simulator: Emergency stop simulated)', type='info')
+        else:
+            # Stop all hardware
+            if self.cnc_controller:
+                try:
+                    self.cnc_controller.emergency_stop()
+                except Exception as e:
+                    print(f"CNC emergency stop error: {e}")
+            if self.vision_system:
+                try:
+                    self.vision_system.stop()
+                except Exception as e:
+                    print(f"Vision system stop error: {e}")
+    
+    def start_scan_cycle(self) -> None:
+        """Start scan cycle."""
+        ui.notify('▶️ Starting scan cycle...', type='positive')
+        self.system_status = "SCANNING"
+        self.cycle_progress = 0.0
+        self.detected_count = 0
+        
+        if SIMULATOR_MODE:
+            # Simulate scan cycle
+            ui.notify('(Simulator: Scanning simulation started)', type='info')
+            # Simulate detecting objects over time
+            import random
+            self.detected_count = random.randint(5, 20)
+            self.cycle_progress = 0.5
+            ui.notify(f'(Simulator: Detected {self.detected_count} objects)', type='positive')
+        else:
+            # Start real hardware scan
+            if not self.camera_active:
+                ui.notify('⚠️ Camera not started. Start camera first.', type='warning')
+                return
+            if not self.current_map:
+                # Start new map
+                try:
+                    from cncsorter.application.bed_mapping import BedMappingService
+                    from cncsorter.infrastructure.vision import ImageStitcher
+                    
+                    stitcher = ImageStitcher()
+                    bed_mapping = BedMappingService(self.vision_system, stitcher)
+                    self.current_map = bed_mapping.start_new_map()
+                    ui.notify(f'Started new map: {self.current_map.map_id}', type='positive')
+                except Exception as e:
+                    ui.notify(f'Error starting map: {e}', type='negative')
+    
+    def start_camera(self) -> None:
+        """Start camera system."""
+        if SIMULATOR_MODE:
+            self.camera_active = True
+            ui.notify('(Simulator: Camera started)', type='positive')
+            return
+        
+        if self.camera_active:
+            ui.notify('Camera already active', type='info')
+            return
+        
+        try:
+            from cncsorter.infrastructure.vision import VisionSystem
+            self.vision_system = VisionSystem(camera_index=0)
+            self.camera_active = True
+            ui.notify('✓ Camera started successfully', type='positive')
+        except Exception as e:
+            ui.notify(f'Error starting camera: {e}', type='negative')
+    
+    def stop_camera(self) -> None:
+        """Stop camera system."""
+        if SIMULATOR_MODE:
+            self.camera_active = False
+            ui.notify('(Simulator: Camera stopped)', type='info')
+            return
+        
+        if self.vision_system:
+            try:
+                self.vision_system.stop()
+                self.camera_active = False
+                ui.notify('Camera stopped', type='info')
+            except Exception as e:
+                ui.notify(f'Error stopping camera: {e}', type='negative')
+    
+    def connect_cnc(self) -> None:
+        """Connect to CNC controller."""
+        if SIMULATOR_MODE:
+            self.cnc_connected = True
+            ui.notify('(Simulator: CNC connected)', type='positive')
+            return
+        
+        if self.cnc_connected:
+            ui.notify('CNC already connected', type='info')
+            return
+        
+        try:
+            from cncsorter.infrastructure.cnc_controller import FluidNCSerial
+            self.cnc_controller = FluidNCSerial('/dev/ttyUSB0', 115200)
+            if self.cnc_controller.connect():
+                self.cnc_connected = True
+                ui.notify('✓ CNC connected successfully', type='positive')
+            else:
+                ui.notify('Failed to connect to CNC', type='negative')
+        except Exception as e:
+            ui.notify(f'Error connecting to CNC: {e}', type='negative')
+    
+    def disconnect_cnc(self) -> None:
+        """Disconnect from CNC controller."""
+        if SIMULATOR_MODE:
+            self.cnc_connected = False
+            ui.notify('(Simulator: CNC disconnected)', type='info')
+            return
+        
+        if self.cnc_controller:
+            try:
+                self.cnc_controller.disconnect()
+                self.cnc_connected = False
+                ui.notify('CNC disconnected', type='info')
+            except Exception as e:
+                ui.notify(f'Error disconnecting CNC: {e}', type='negative')
     
     def start_scan_cycle(self) -> None:
         """Start scan cycle."""
@@ -524,17 +711,44 @@ class TouchscreenInterface:
 
 def main():
     """Run the touchscreen interface."""
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='CNCSorter Touchscreen Interface')
+    parser.add_argument('--simulator', '--sim', action='store_true',
+                       help='Run in simulator mode (no hardware required - perfect for Mac testing)')
+    parser.add_argument('--port', type=int, default=8080,
+                       help='Port to run the web interface on (default: 8080)')
+    parser.add_argument('--fullscreen', action='store_true',
+                       help='Run in fullscreen mode (for production deployment)')
+    
+    args = parser.parse_args()
+    
+    # Print startup information
+    print("=" * 60)
+    print("CNCSorter Touchscreen Interface")
+    print("=" * 60)
+    if args.simulator or SIMULATOR_MODE:
+        print("MODE: Simulator (No hardware required)")
+        print("      Perfect for testing on Mac/Windows/Linux")
+        print("      All controls functional without real hardware")
+    else:
+        print("MODE: Production (Hardware integration enabled)")
+        print("      Requires camera and CNC connection")
+    print(f"PORT: http://localhost:{args.port}")
+    print("=" * 60)
+    print()
+    
+    # Create interface
     interface = TouchscreenInterface()
     interface.create_ui()
     
     # Configure NiceGUI
     ui.run(
         title='CNCSorter Touchscreen',
-        port=8080,
+        port=args.port,
         reload=False,
         show=True,
-        native=True,  # Run as native app
-        fullscreen=False,  # Can be set to True for production
+        native=False,  # Use browser for better compatibility
+        fullscreen=args.fullscreen,
     )
 
 
