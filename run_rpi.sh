@@ -8,9 +8,14 @@ echo "Object Detection System"
 echo "========================================"
 echo ""
 
+# Set environment variables for headless/display operation
+# Prevents Qt platform plugin errors
+export QT_QPA_PLATFORM=offscreen
+export OPENCV_VIDEOIO_PRIORITY_MSMF=0
+
 # Check if running on Raspberry Pi
 if [ -f /proc/device-tree/model ]; then
-    MODEL=$(cat /proc/device-tree/model)
+    MODEL=$(cat /proc/device-tree/model 2>/dev/null | tr -d '\0')
     echo "Detected: $MODEL"
     echo ""
 fi
@@ -46,7 +51,7 @@ python -m pip install --upgrade pip > /dev/null 2>&1
 
 # Install package in editable mode (makes cncsorter importable)
 echo "Installing cncsorter package in development mode..."
-pip install -e . > /dev/null 2>&1
+pip install -e . 2>&1 | grep -v "Requirement already satisfied" || true
 
 # Use pinned requirements for security
 if [ -f "requirements-lock.txt" ]; then

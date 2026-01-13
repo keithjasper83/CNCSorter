@@ -240,6 +240,16 @@ The launcher scripts automatically handle the correct execution from the reposit
 - **HTTP**: Verify FluidNC IP address and port
 - Test connection without CNC: Use `--cnc-mode none`
 
+### Raspberry Pi Specific Issues
+
+For Raspberry Pi-specific troubleshooting (Qt platform errors, font issues, performance optimization), see:
+- **[RPI_TROUBLESHOOTING.md](RPI_TROUBLESHOOTING.md)** - Comprehensive Raspberry Pi troubleshooting guide
+
+Common fixes include:
+- Setting `export QT_QPA_PLATFORM=offscreen` for headless operation
+- Using system OpenCV packages for better performance
+- Adjusting swap space for memory-constrained operations
+
 For more detailed documentation, see:
 - [README_FULL.md](README_FULL.md) - Complete system guide
 - [INSTALL.md](INSTALL.md) - Installation and setup
