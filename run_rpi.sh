@@ -44,6 +44,10 @@ echo "Checking and installing dependencies..."
 echo "Note: OpenCV installation on Raspberry Pi may take several minutes..."
 python -m pip install --upgrade pip > /dev/null 2>&1
 
+# Install package in editable mode (makes cncsorter importable)
+echo "Installing cncsorter package in development mode..."
+pip install -e . > /dev/null 2>&1
+
 # Use pinned requirements for security
 if [ -f "requirements-lock.txt" ]; then
     echo "Installing from pinned requirements for security..."

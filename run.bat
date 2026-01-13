@@ -34,6 +34,10 @@ REM Install/update dependencies
 echo Checking and installing dependencies...
 python -m pip install --upgrade pip >nul 2>&1
 
+REM Install package in editable mode (makes cncsorter importable)
+echo Installing cncsorter package in development mode...
+pip install -e . >nul 2>&1
+
 REM Use pinned requirements for security
 if exist requirements-lock.txt (
     echo Installing from pinned requirements for security...

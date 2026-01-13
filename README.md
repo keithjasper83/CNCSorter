@@ -13,6 +13,22 @@ CNC object identification and mapping system with pick and place capabilities ba
 - **Interactive Testing**: Test individual functions without running the full automation
 - **Touchscreen GUI**: Simple, large-button interface optimized for small Raspberry Pi touchscreens
 
+## Installation
+
+For detailed installation instructions, see **[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**.
+
+### Quick Install
+
+```bash
+# Using launcher scripts (automatic installation)
+./run.sh          # Mac/Linux
+./run_rpi.sh      # Raspberry Pi
+run.bat           # Windows
+
+# Manual installation
+pip install -e .  # From repository root
+```
+
 ## Quick Start
 
 ### Touchscreen GUI Mode (Raspberry Pi)
@@ -39,6 +55,7 @@ Perfect for:
 #### Windows
 Simply double-click `run.bat` to automatically:
 - Create a virtual environment (if needed)
+- **Install cncsorter package** (NEW - fixes import errors)
 - Install required dependencies
 - Launch the full application
 

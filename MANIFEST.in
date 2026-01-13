@@ -1,0 +1,25 @@
+# Include documentation and configuration files
+include README.md
+include LICENSE
+include OVERVIEW.md
+include PROJECT_STATUS.md
+include IMPLEMENTATION_ROADMAP.md
+include UPGRADE.md
+include requirements.txt
+include requirements-lock.txt
+
+# Include all markdown documentation
+recursive-include . *.md
+
+# Exclude build artifacts and caches
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+prune venv
+prune .git
+prune .mypy_cache
+prune .pytest_cache
+prune build
+prune dist
+prune *.egg-info
