@@ -4,6 +4,10 @@ from typing import Optional
 
 from cncsorter.infrastructure.vision import VisionSystem, ImageStitcher
 from cncsorter.infrastructure.cnc_controller import FluidNCSerial, FluidNCHTTP, CNCController
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
+from cncsorter.infrastructure.logging_service import setup_logging
+from cncsorter.infrastructure.config_validation import validate_config_dict
+import cncsorter.config as config
 from cncsorter.application.bed_mapping import BedMappingService
 from cncsorter.presentation.live_display import LiveStatusDisplay
 
@@ -14,7 +18,7 @@ class CNCSorterApp:
     def __init__(
         self,
         camera_index: int = 0,
-        cnc_mode: str = "none",  # "serial", "http", or "none"
+        cnc_mode: str = "none",  # "serial", "http", "mock", or "none"
         cnc_config: Optional[dict] = None
     ):
         """
@@ -50,9 +54,21 @@ class CNCSorterApp:
         Returns:
             True if initialization successful
         """
+        # Setup logging first
+        setup_logging(app_name="cncsorter")
+
         print("=" * 50)
         print("CNCSorter - Initializing...")
         print("=" * 50)
+
+        # Validate configuration
+        try:
+            print("Validating configuration...")
+            validate_config_dict(config)
+            print("Configuration valid.")
+        except Exception as e:
+            print(f"Configuration validation failed: {e}")
+            return False
         
         # Initialize display
         self.display = LiveStatusDisplay()
@@ -93,6 +109,10 @@ class CNCSorterApp:
                 host = self.cnc_config.get('host', '192.168.1.100')
                 http_port = self.cnc_config.get('http_port', 80)
                 self.cnc_controller = FluidNCHTTP(host, http_port)
+            elif self.cnc_mode == "mock":
+                port = self.cnc_config.get('mock_port', 5000)
+                speed = self.cnc_config.get('mock_speed', 100.0)
+                self.cnc_controller = MockCNCController(port=port, speed=speed)
             
             if self.cnc_controller:
                 self.display.update(status="Connecting to CNC...", stage="STARTUP", progress=50)
@@ -374,7 +394,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='CNCSorter - CNC Object Detection and Mapping')
     parser.add_argument('--camera', type=int, default=0, help='Camera device index')
-    parser.add_argument('--cnc-mode', choices=['none', 'serial', 'http'], default='none',
+    parser.add_argument('--cnc-mode', choices=['none', 'serial', 'http', 'mock'], default='none',
                        help='CNC connection mode')
     parser.add_argument('--cnc-port', type=str, default='/dev/ttyUSB0',
                        help='Serial port for CNC (serial mode)')
@@ -384,6 +404,8 @@ def main():
                        help='IP address for CNC (http mode)')
     parser.add_argument('--cnc-http-port', type=int, default=80,
                        help='HTTP port for CNC (http mode)')
+    parser.add_argument('--mock-port', type=int, default=5000,
+                       help='Web server port for Mock CNC (mock mode)')
     
     args = parser.parse_args()
     
@@ -392,7 +414,9 @@ def main():
         'port': args.cnc_port,
         'baudrate': args.cnc_baudrate,
         'host': args.cnc_host,
-        'http_port': args.cnc_http_port
+        'http_port': args.cnc_http_port,
+        'mock_port': args.mock_port,
+        'mock_speed': 200.0
     }
     
     # Create and run application

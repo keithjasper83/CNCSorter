@@ -6,13 +6,16 @@ import cv2
 from typing import Optional
 
 # Add parent directory to path for imports (relative to this file)
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from domain.entities import CNCCoordinate
-from infrastructure.vision import VisionSystem, ImageStitcher
-from infrastructure.cnc_controller import FluidNCSerial, FluidNCHTTP, CNCController
-from application.bed_mapping import BedMappingService
-from presentation.live_display import LiveStatusDisplay
+from cncsorter.domain.entities import CNCCoordinate
+from cncsorter.infrastructure.vision import VisionSystem, ImageStitcher
+from cncsorter.infrastructure.cnc_controller import FluidNCSerial, FluidNCHTTP, CNCController
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
+from cncsorter.application.bed_mapping import BedMappingService
+from cncsorter.application.pick_planning import PickPlanningService
+from cncsorter.presentation.live_display import LiveStatusDisplay
+from cncsorter.domain.entities import DetectedObject, Point2D
 
 
 class InteractiveTestMenu:
@@ -40,11 +43,13 @@ class InteractiveTestMenu:
         print("  2. Test Object Detection")
         print("  3. Test CNC Controller (Serial)")
         print("  4. Test CNC Controller (HTTP)")
-        print("  5. Test Image Capture & Detection")
-        print("  6. Test Image Stitching")
-        print("  7. Test Bed Mapping Service")
-        print("  8. Test Live Status Display")
-        print("  9. Run Full Application")
+        print("  5. Test CNC Controller (Mock)")
+        print("  6. Test Image Capture & Detection")
+        print("  7. Test Image Stitching")
+        print("  8. Test Bed Mapping Service")
+        print("  9. Test Live Status Display")
+        print("  10. Test Pick Planning")
+        print("  11. Run Full Application")
         print("  0. Exit")
         print("=" * 60)
     
@@ -240,6 +245,55 @@ class InteractiveTestMenu:
         cnc.disconnect()
         print("\n✓ Disconnected from CNC")
     
+    def test_cnc_mock(self):
+        """Test 5: Mock CNC Controller."""
+        print("\n" + "=" * 60)
+        print("TEST 5: CNC Controller (Mock)")
+        print("=" * 60)
+
+        port_input = input("Enter web port [5000]: ").strip() or '5000'
+        speed_input = input("Enter speed (mm/s) [100]: ").strip() or '100'
+
+        try:
+            port = int(port_input)
+            speed = float(speed_input)
+        except ValueError:
+            print("❌ Invalid input")
+            return
+
+        print(f"\nStarting Mock CNC on port {port} with speed {speed}...")
+        print(f"Open http://localhost:{port} in your browser to visualize!")
+
+        cnc = MockCNCController(port=port, speed=speed)
+
+        if not cnc.connect():
+            print("❌ FAILED: Could not start Mock CNC")
+            return
+
+        print("✓ Mock CNC started")
+        print("\nGetting position...")
+        pos = cnc.get_position()
+        print(f"Position: {pos}")
+
+        test_move = input("\nTest movement? (y/n): ").strip().lower()
+        if test_move == 'y':
+            x = float(input("  Enter X: "))
+            y = float(input("  Enter Y: "))
+            z = float(input("  Enter Z [0]: ") or "0")
+
+            coord = CNCCoordinate(x, y, z)
+            print(f"\nMoving to {coord.to_dict()}...")
+            if cnc.move_to(coord):
+                print("✓ Move command sent (check browser for animation)")
+                # Wait a bit for movement to complete/show
+                time.sleep(1)
+            else:
+                print("❌ Move command failed")
+
+        input("\nPress Enter to stop Mock CNC and disconnect...")
+        cnc.disconnect()
+        print("\n✓ Disconnected")
+
     def test_image_capture_detection(self):
         """Test 5: Image capture with detection."""
         print("\n" + "=" * 60)
@@ -488,10 +542,55 @@ class InteractiveTestMenu:
             display.close()
             print("\n✓ Test complete")
     
-    def run_full_application(self):
-        """Test 9: Run the full application."""
+    def test_pick_planning(self):
+        """Test 10: Pick Planning Algorithm."""
         print("\n" + "=" * 60)
-        print("TEST 9: Full Application")
+        print("TEST 10: Pick Planning Algorithm")
+        print("=" * 60)
+
+        planner = PickPlanningService()
+
+        # Create some dummy objects
+        print("\nGenerating dummy objects...")
+        objects = [
+            DetectedObject(1, [], (100, 100, 20, 20), 400, Point2D(100, 100), classification="nut"),  # Medium nut
+            DetectedObject(2, [], (200, 100, 10, 10), 100, Point2D(200, 100), classification="nut"),  # Tiny nut
+            DetectedObject(3, [], (150, 150, 30, 30), 900, Point2D(150, 150), classification="bolt"), # Bolt
+            DetectedObject(4, [], (300, 300, 50, 50), 2500, Point2D(300, 300), classification="plastic"), # Plastic (suction)
+            DetectedObject(5, [], (50, 50, 10, 10), 100, Point2D(50, 50), classification="unknown"),  # Unknown (suction)
+        ]
+
+        # Manually set CNC coords for testing since they are usually calculated
+        for obj in objects:
+            obj.cnc_coordinate = CNCCoordinate(obj.center.x, obj.center.y, 0)
+
+        print(f"Created {len(objects)} objects of various types.")
+
+        print("\nPlanning route...")
+        start_time = time.time()
+        plan = planner.create_plan(objects, start_position=CNCCoordinate(0,0,0))
+        duration = time.time() - start_time
+
+        print(f"✓ Plan generated in {duration:.4f}s")
+        print(f"  Total Items: {plan.total_items}")
+        print(f"  Tool Changes: {plan.tool_changes}")
+        print(f"  Estimated Runtime: {plan.estimated_duration_seconds:.1f}s")
+        print(f"  Total Operations: {len(plan.operations)}")
+
+        print("\nOperation Sequence:")
+        print("-" * 60)
+        for i, op in enumerate(plan.operations):
+            tool_info = f"[{op.tool_id}] " if op.tool_id else " " * 15
+            coord = f"({op.target_coordinate.x:.0f}, {op.target_coordinate.y:.0f}, {op.target_coordinate.z:.0f})"
+            print(f"{i+1:3d}. {tool_info}{op.op_type:12} {coord:20} : {op.details}")
+        print("-" * 60)
+
+        input("\nPress Enter to continue...")
+
+    def run_full_application(self):
+        """Test 11: Run the full application."""
+        print("\n" + "=" * 60)
+        print("TEST 11: Full Application")
         print("=" * 60)
         print("\nLaunching full CNCSorter application...")
         
@@ -532,14 +631,18 @@ class InteractiveTestMenu:
             elif choice == '4':
                 self.test_cnc_http()
             elif choice == '5':
-                self.test_image_capture_detection()
+                self.test_cnc_mock()
             elif choice == '6':
-                self.test_image_stitching()
+                self.test_image_capture_detection()
             elif choice == '7':
-                self.test_bed_mapping_service()
+                self.test_image_stitching()
             elif choice == '8':
-                self.test_live_display()
+                self.test_bed_mapping_service()
             elif choice == '9':
+                self.test_live_display()
+            elif choice == '10':
+                self.test_pick_planning()
+            elif choice == '11':
                 self.run_full_application()
             else:
                 print("❌ Invalid choice. Please try again.")
