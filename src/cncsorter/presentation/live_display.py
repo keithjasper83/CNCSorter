@@ -70,7 +70,7 @@ class LiveStatusDisplay:
             canvas,
             "CNCSorter - CNC Object Detection & Mapping",
             (20, 40),
-            cv2.FONT_HERSHEY_BOLD,
+            cv2.FONT_HERSHEY_DUPLEX,
             1.0,
             self.COLOR_ACCENT,
             2
@@ -120,7 +120,7 @@ class LiveStatusDisplay:
             canvas,
             f"Stage: {self.current_stage}",
             (20, y_start + 35),
-            cv2.FONT_HERSHEY_BOLD,
+            cv2.FONT_HERSHEY_DUPLEX,
             0.8,
             stage_color,
             2
