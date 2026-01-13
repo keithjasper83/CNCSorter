@@ -4,7 +4,8 @@ This module contains concrete event handlers that react to domain events.
 Subscribers implement the application's orchestration logic while maintaining
 loose coupling through the event bus.
 """
-from typing import Optional
+import logging
+from typing import Optional, Any
 
 from cncsorter.application.events import (
     ObjectsDetected,
@@ -31,6 +32,7 @@ class PersistenceSubscriber:
             repository: Repository for persisting detected objects.
         """
         self.repository = repository
+        self.logger = logging.getLogger(__name__)
 
     def on_objects_detected(self, event: ObjectsDetected) -> None:
         """Handle ObjectsDetected event by persisting objects.
@@ -46,9 +48,9 @@ class PersistenceSubscriber:
                 
                 # Save to repository
                 uuid = self.repository.save(obj)
-                print(f"[PersistenceSubscriber] Saved object {uuid} (camera {event.camera_index})")
+                self.logger.info(f"Saved object {uuid} (camera {event.camera_index})")
             except RepositoryError as e:
-                print(f"[PersistenceSubscriber] Failed to save object: {e}")
+                self.logger.error(f"Failed to save object: {e}")
 
 
 class GUISubscriber:
@@ -66,6 +68,7 @@ class GUISubscriber:
             display: Optional display component to update (LiveStatusDisplay).
         """
         self.display = display
+        self.logger = logging.getLogger(__name__)
 
     def on_objects_detected(self, event: ObjectsDetected) -> None:
         """Handle ObjectsDetected event by updating display.
@@ -74,7 +77,7 @@ class GUISubscriber:
             event: Event containing detected objects.
         """
         count = len(event.detected_objects)
-        print(f"[GUISubscriber] Display updated: {count} objects detected")
+        self.logger.debug(f"GUI updated: {count} objects detected")
         # Future: self.display.update_object_count(count)
 
     def on_bed_map_completed(self, event: BedMapCompleted) -> None:
@@ -83,7 +86,7 @@ class GUISubscriber:
         Args:
             event: Event containing bed map completion info.
         """
-        print(f"[GUISubscriber] Bed map completed: {event.total_objects} objects, {event.image_count} images")
+        self.logger.info(f"Bed map completed: {event.total_objects} objects, {event.image_count} images")
         # Future: self.display.show_completion_status(event)
 
     def on_boundary_violation(self, event: BoundaryViolationDetected) -> None:
@@ -92,7 +95,7 @@ class GUISubscriber:
         Args:
             event: Event containing boundary violation details.
         """
-        print(f"[GUISubscriber] ⚠ BOUNDARY VIOLATION: {event.message}")
+        self.logger.warning(f"BOUNDARY VIOLATION: {event.message}")
         # Future: self.display.show_error_message(event.message)
 
 
@@ -110,30 +113,31 @@ class LoggingSubscriber:
             log_level: Logging level (DEBUG, INFO, WARNING, ERROR).
         """
         self.log_level = log_level
+        self.logger = logging.getLogger("audit")
 
     def on_objects_detected(self, event: ObjectsDetected) -> None:
         """Log ObjectsDetected event."""
-        print(f"[AuditLog] ObjectsDetected: {len(event.detected_objects)} objects, "
-              f"camera={event.camera_index}, image={event.image_id}, time={event.timestamp}")
+        self.logger.info(f"ObjectsDetected: {len(event.detected_objects)} objects, "
+                         f"camera={event.camera_index}, image={event.image_id}")
 
     def on_bed_map_completed(self, event: BedMapCompleted) -> None:
         """Log BedMapCompleted event."""
-        print(f"[AuditLog] BedMapCompleted: map_id={event.bed_map_id}, "
-              f"objects={event.total_objects}, images={event.image_count}, time={event.timestamp}")
+        self.logger.info(f"BedMapCompleted: map_id={event.bed_map_id}, "
+                         f"objects={event.total_objects}, images={event.image_count}")
 
     def on_cnc_position_updated(self, event: CNCPositionUpdated) -> None:
         """Log CNCPositionUpdated event."""
-        print(f"[AuditLog] CNCPositionUpdated: position=({event.position.x:.2f}, "
-              f"{event.position.y:.2f}, {event.position.z:.2f}), time={event.timestamp}")
+        self.logger.info(f"CNCPositionUpdated: position=({event.position.x:.2f}, "
+                         f"{event.position.y:.2f}, {event.position.z:.2f})")
 
     def on_pick_task_created(self, event: PickTaskCreated) -> None:
         """Log PickTaskCreated event."""
-        print(f"[AuditLog] PickTaskCreated: task={event.task_id}, "
-              f"object={event.object_id}, position=({event.target_position.x:.2f}, "
-              f"{event.target_position.y:.2f}, {event.target_position.z:.2f}), time={event.timestamp}")
+        self.logger.info(f"PickTaskCreated: task={event.task_id}, "
+                         f"object={event.object_id}, position=({event.target_position.x:.2f}, "
+                         f"{event.target_position.y:.2f}, {event.target_position.z:.2f})")
 
     def on_boundary_violation(self, event: BoundaryViolationDetected) -> None:
         """Log BoundaryViolationDetected event."""
-        print(f"[AuditLog] ⚠ BoundaryViolation: type={event.boundary_type}, "
-              f"attempted=({event.attempted_position.x:.2f}, {event.attempted_position.y:.2f}, "
-              f"{event.attempted_position.z:.2f}), message={event.message}, time={event.timestamp}")
+        self.logger.warning(f"BoundaryViolation: type={event.boundary_type}, "
+                            f"attempted=({event.attempted_position.x:.2f}, {event.attempted_position.y:.2f}, "
+                            f"{event.attempted_position.z:.2f}), message={event.message}")
