@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Any
 from datetime import datetime
+from uuid import UUID, uuid4
 import numpy as np
 
 
@@ -35,6 +36,11 @@ class DetectedObject:
     image_id: Optional[str] = None
     cnc_coordinate: Optional[CNCCoordinate] = None
     timestamp: Optional[datetime] = None
+    uuid: UUID = field(default_factory=uuid4)
+    classification: str = "unknown"
+    confidence: float = 0.0
+    source_camera: Optional[int] = None
+    bed_map_id: Optional[str] = None
     
     def __post_init__(self):
         if self.timestamp is None:
