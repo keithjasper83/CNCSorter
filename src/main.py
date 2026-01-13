@@ -60,11 +60,22 @@ class CNCSorterApp:
         self.display.wait_key(100)
         
         # Initialize vision system
-        print("Initializing vision system...")
+        print(f"Initializing vision system (camera {self.camera_index})...")
         self.vision_system = VisionSystem(self.camera_index)
         if not self.vision_system.open_camera():
-            self.display.update(status="ERROR: Failed to open camera", stage="ERROR")
-            self.display.wait_key(3000)
+            print("\n" + "!"*60)
+            print("INITIALIZATION FAILED: Cannot open camera")
+            print("!"*60)
+            print("\nThe application cannot start without a working camera.")
+            print("Please fix the camera issue and try again.")
+            print("!"*60 + "\n")
+            
+            if self.display:
+                self.display.update(
+                    status=f"FATAL: Cannot open camera {self.camera_index}",
+                    stage="ERROR"
+                )
+                self.display.wait_key(5000)
             return False
         
         self.display.update(status="Camera initialized", stage="STARTUP", progress=30)
@@ -126,7 +137,12 @@ class CNCSorterApp:
     def run(self):
         """Run the main application loop."""
         if not self.initialize():
-            print("Initialization failed. Exiting.")
+            print("\n" + "="*60)
+            print("APPLICATION STARTUP FAILED")
+            print("="*60)
+            print("\nInitialization did not complete successfully.")
+            print("Please resolve the issues above and try again.")
+            print("="*60 + "\n")
             return
         
         print("\n" + "=" * 50)
@@ -269,22 +285,29 @@ class CNCSorterApp:
     
     def cleanup(self):
         """Clean up resources."""
-        print("\nCleaning up...")
+        print("\n" + "="*60)
+        print("SHUTTING DOWN")
+        print("="*60)
         
         if self.display:
             self.display.update(status="Shutting down...", stage="SHUTDOWN")
             self.display.wait_key(500)
         
         if self.vision_system:
+            print("Closing camera...")
             self.vision_system.close_camera()
         
         if self.cnc_controller:
+            print("Disconnecting CNC controller...")
             self.cnc_controller.disconnect()
         
         if self.display:
+            print("Closing display...")
             self.display.close()
         
-        print("Shutdown complete.")
+        print("="*60)
+        print("Application closed successfully")
+        print("="*60 + "\n")
 
 
 def main():

@@ -20,19 +20,80 @@ class VisionSystem:
         self._is_open = False
     
     def open_camera(self) -> bool:
-        """Open the camera connection."""
-        self.capture = cv2.VideoCapture(self.camera_index)
-        self._is_open = self.capture.isOpened()
+        """
+        Open the camera connection.
         
-        if self._is_open:
-            # Set camera properties for better quality
-            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-            print(f"Camera {self.camera_index} opened successfully")
-        else:
-            print(f"Failed to open camera {self.camera_index}")
+        Returns:
+            True if camera opened successfully, False otherwise
+        """
+        try:
+            self.capture = cv2.VideoCapture(self.camera_index)
+            self._is_open = self.capture.isOpened()
+            
+            if self._is_open:
+                # Set camera properties for better quality
+                self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                print(f"✓ Camera {self.camera_index} opened successfully")
+                return True
+            else:
+                print(f"\n{'='*60}")
+                print(f"ERROR: Failed to open camera {self.camera_index}")
+                print(f"{'='*60}")
+                self._print_camera_troubleshooting()
+                return False
+                
+        except Exception as e:
+            print(f"\n{'='*60}")
+            print(f"ERROR: Exception while opening camera {self.camera_index}")
+            print(f"{'='*60}")
+            print(f"Exception: {type(e).__name__}: {str(e)}")
+            self._print_camera_troubleshooting()
+            self._is_open = False
+            return False
+    
+    def _print_camera_troubleshooting(self):
+        """Print helpful camera troubleshooting information."""
+        print("\nPossible causes and solutions:")
+        print("\n1. Camera not connected:")
+        print("   → Check physical camera connection")
+        print("   → Try a different USB port")
+        print("   → Verify camera LED is on (if applicable)")
         
-        return self._is_open
+        print("\n2. Camera in use by another application:")
+        print("   → Close other apps using the camera (Zoom, Skype, etc.)")
+        print("   → Check for other CNCSorter instances running")
+        
+        print("\n3. Wrong camera index:")
+        print("   → List available cameras:")
+        print("     $ ls /dev/video* # Linux/Raspberry Pi")
+        print("     $ system_profiler SPCameraDataType # macOS")
+        print("   → Try a different camera index:")
+        print("     $ python -m src.main --camera 1")
+        print("     $ python -m src.main --camera 2")
+        
+        print("\n4. Permissions issue (Linux/Raspberry Pi):")
+        print("   → Add user to video group:")
+        print("     $ sudo usermod -a -G video $USER")
+        print("   → Reboot after adding to group")
+        print("   → Check camera permissions:")
+        print("     $ ls -l /dev/video*")
+        
+        print("\n5. Driver/system issue:")
+        print("   → Install v4l-utils (Linux):")
+        print("     $ sudo apt-get install v4l-utils")
+        print("   → List camera info:")
+        print("     $ v4l2-ctl --list-devices")
+        print("   → Test camera:")
+        print("     $ v4l2-ctl --device=/dev/video0 --all")
+        
+        print("\n6. OpenCV installation issue:")
+        print("   → Reinstall opencv-python:")
+        print("     $ pip install --force-reinstall opencv-python")
+        
+        print(f"\n{'='*60}")
+        print("For Raspberry Pi specific issues, see: RPI_TROUBLESHOOTING.md")
+        print(f"{'='*60}\n")
     
     def close_camera(self):
         """Close the camera connection."""
