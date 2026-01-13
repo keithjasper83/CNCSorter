@@ -1,0 +1,2 @@
+# PEP 561 stub marker for type checking support
+# This file indicates that the cncsorter package supports type hints

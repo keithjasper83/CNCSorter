@@ -1,0 +1,8 @@
+# Pinned dependencies for secure, reproducible installations
+# Generated for CNCSorter project
+# Use: pip install -r requirements-lock.txt
+
+opencv-python==4.10.0.84
+numpy==1.26.4
+pyserial==3.5
+requests==2.32.3
