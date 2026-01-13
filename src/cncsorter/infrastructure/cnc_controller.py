@@ -5,6 +5,7 @@ import serial
 import time
 import requests
 from ..domain.entities import CNCCoordinate
+from .motion_validator import MotionValidator, BoundaryViolationError
 
 
 class CNCController(ABC):
@@ -39,18 +40,21 @@ class CNCController(ABC):
 class FluidNCSerial(CNCController):
     """FluidNC controller implementation using serial communication."""
     
-    def __init__(self, port: str = '/dev/ttyUSB0', baudrate: int = 115200):
+    def __init__(self, port: str = '/dev/ttyUSB0', baudrate: int = 115200, 
+                 motion_validator: Optional[MotionValidator] = None):
         """
         Initialize FluidNC serial controller.
         
         Args:
             port: Serial port (e.g., '/dev/ttyUSB0' on Linux, 'COM3' on Windows)
             baudrate: Serial communication baudrate
+            motion_validator: Optional MotionValidator for safety checks
         """
         self.port = port
         self.baudrate = baudrate
         self.serial_connection: Optional[serial.Serial] = None
         self._connected = False
+        self.motion_validator = motion_validator
     
     def connect(self) -> bool:
         """Connect to FluidNC via serial."""
@@ -132,9 +136,25 @@ class FluidNCSerial(CNCController):
         return None
     
     def move_to(self, coordinate: CNCCoordinate) -> bool:
-        """Move to specified coordinate using G0 command."""
+        """Move to specified coordinate using G0 command.
+        
+        Validates coordinate against motion validator before sending command.
+        
+        Args:
+            coordinate: Target CNC coordinate.
+            
+        Returns:
+            True if move command sent successfully, False otherwise.
+            
+        Raises:
+            BoundaryViolationError: If coordinate violates workspace boundaries.
+        """
         if not self.is_connected():
             return False
+        
+        # Validate coordinate if validator is configured
+        if self.motion_validator:
+            self.motion_validator.validate_coordinate(coordinate)
         
         try:
             command = f'G0 X{coordinate.x} Y{coordinate.y} Z{coordinate.z}\n'
@@ -152,16 +172,19 @@ class FluidNCSerial(CNCController):
 class FluidNCHTTP(CNCController):
     """FluidNC controller implementation using HTTP/WebSocket API."""
     
-    def __init__(self, host: str = '192.168.1.100', port: int = 80):
+    def __init__(self, host: str = '192.168.1.100', port: int = 80, 
+                 motion_validator: Optional[MotionValidator] = None):
         """
         Initialize FluidNC HTTP controller.
         
         Args:
             host: IP address or hostname of FluidNC
             port: HTTP port (default 80)
+            motion_validator: Optional MotionValidator for safety checks
         """
         self.base_url = f'http://{host}:{port}'
         self._connected = False
+        self.motion_validator = motion_validator
     
     def connect(self) -> bool:
         """Test connection to FluidNC HTTP interface."""
@@ -238,9 +261,25 @@ class FluidNCHTTP(CNCController):
         return None
     
     def move_to(self, coordinate: CNCCoordinate) -> bool:
-        """Move to specified coordinate via HTTP API."""
+        """Move to specified coordinate via HTTP API.
+        
+        Validates coordinate against motion validator before sending command.
+        
+        Args:
+            coordinate: Target CNC coordinate.
+            
+        Returns:
+            True if move command sent successfully, False otherwise.
+            
+        Raises:
+            BoundaryViolationError: If coordinate violates workspace boundaries.
+        """
         if not self.is_connected():
             return False
+        
+        # Validate coordinate if validator is configured
+        if self.motion_validator:
+            self.motion_validator.validate_coordinate(coordinate)
         
         try:
             command = f'G0 X{coordinate.x} Y{coordinate.y} Z{coordinate.z}'
