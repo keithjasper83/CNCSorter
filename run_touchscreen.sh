@@ -53,10 +53,37 @@ fi
 # Create config directory
 mkdir -p config
 
-# Activate virtual environment if it exists
-if [ -d "venv" ]; then
+# Check if Python 3 is available
+if ! command -v python3 &> /dev/null; then
+    echo -e "${RED}Error: Python 3 is not installed.${NC}"
+    echo "Please install Python 3.8 or higher and try again."
+    exit 1
+fi
+
+# Create virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Error: Failed to create virtual environment.${NC}"
+        echo "This could be because:"
+        echo "  1. python3-venv is not installed (Linux: sudo apt install python3-venv)"
+        echo "  2. Insufficient disk space"
+        echo "  3. Permission issues"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Virtual environment created${NC}"
+fi
+
+# Activate virtual environment
+if [ -f "venv/bin/activate" ]; then
     echo "Activating virtual environment..."
     source venv/bin/activate
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Virtual environment activated${NC}"
+    fi
+else
+    echo -e "${YELLOW}Warning: No virtual environment found, using system Python${NC}"
 fi
 
 # Install/update package
@@ -67,6 +94,7 @@ if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Package installed successfully${NC}"
 else
     echo -e "${RED}✗ Package installation failed${NC}"
+    echo "Try running: pip install -e . (to see error details)"
     exit 1
 fi
 
