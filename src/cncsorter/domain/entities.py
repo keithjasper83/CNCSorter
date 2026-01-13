@@ -85,3 +85,17 @@ class BedMap:
         for obj in image.detected_objects:
             obj.image_id = image.image_id
             self.all_objects.append(obj)
+
+
+@dataclass
+class PickTask:
+    """Represents a task to pick up an object."""
+    task_id: str
+    object_id: UUID
+    target_position: CNCCoordinate
+    status: str = "pending"
+    timestamp: datetime = None
+
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
