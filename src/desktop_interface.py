@@ -6,8 +6,8 @@ Feature-rich NiceGUI interface for desktop/tablet control.
 Integrates the Touchscreen Interface via an "Eye Frame" (IFrame) for unified control.
 """
 
-from nicegui import ui, app
-from typing import Optional, List, Dict, Any
+from nicegui import ui
+from typing import Optional, List
 import json
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -15,12 +15,11 @@ from datetime import datetime
 
 # Import from cncsorter package
 from cncsorter.application.events import (
-    EventBus, ObjectsDetected, BedMapCompleted,
-    CNCPositionUpdated, BoundaryViolationDetected
+    EventBus, ObjectsDetected,
+    BoundaryViolationDetected
 )
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
 # Reuse configuration classes
-from cncsorter import config
 
 
 @dataclass

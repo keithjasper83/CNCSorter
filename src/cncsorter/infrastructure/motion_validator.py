@@ -5,7 +5,7 @@ by enforcing workspace boundaries. All G-code movement commands are intercepted
 and validated before transmission to the CNC controller.
 """
 import re
-from typing import Optional, Tuple
+from typing import Optional
 
 from cncsorter.domain.entities import CNCCoordinate
 from cncsorter.application.events import EventBus, BoundaryViolationDetected

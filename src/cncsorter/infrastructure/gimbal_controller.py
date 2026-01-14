@@ -14,7 +14,7 @@ Supports:
 """
 
 import time
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
@@ -23,7 +23,8 @@ try:
     GPIO_AVAILABLE = True
 except (ImportError, RuntimeError):
     GPIO_AVAILABLE = False
-    print("Warning: RPi.GPIO not available. Gimbal control will be simulated.")
+    import warnings
+    warnings.warn("RPi.GPIO not available. Gimbal control will be simulated.", RuntimeWarning)
 
 
 @dataclass

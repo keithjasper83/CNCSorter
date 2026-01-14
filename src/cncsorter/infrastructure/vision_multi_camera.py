@@ -17,7 +17,6 @@ import time
 import threading
 from typing import List, Tuple, Optional, Dict, Any
 from dataclasses import dataclass, field
-from enum import Enum
 
 from domain.entities import DetectedObject, Point2D, CapturedImage, CNCCoordinate
 

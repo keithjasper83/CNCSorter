@@ -5,7 +5,7 @@ system components. Following DDD principles, domain events represent
 significant state changes that other parts of the system may care about.
 """
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Type
+from typing import Callable, Dict, List, Type
 from datetime import datetime
 from uuid import UUID
 

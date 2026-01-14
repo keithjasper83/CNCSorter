@@ -13,7 +13,6 @@ Usage:
 """
 
 import json
-import os
 import sys
 from dataclasses import dataclass, asdict
 from typing import Tuple, Optional

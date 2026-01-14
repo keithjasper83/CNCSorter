@@ -223,7 +223,6 @@ def test_continuous_pan(gimbal):
 def main():
     """Main test program."""
     gimbal = None
-    gimbal_type = None
 
     try:
         while True:
@@ -241,7 +240,6 @@ def main():
 
                 try:
                     gimbal = TwoAxisGimbal(pan_pin=pan_pin, tilt_pin=tilt_pin)
-                    gimbal_type = "2-axis"
                     print(f"✓ 2-axis gimbal initialized (GPIO {pan_pin}, {tilt_pin})")
                 except Exception as e:
                     print(f"❌ Failed to initialize gimbal: {e}")
@@ -254,7 +252,6 @@ def main():
 
                 try:
                     gimbal = ThreeAxisGimbal(pan_pin=pan_pin, tilt_pin=tilt_pin, roll_pin=roll_pin)
-                    gimbal_type = "3-axis"
                     print(f"✓ 3-axis gimbal initialized (GPIO {pan_pin}, {tilt_pin}, {roll_pin})")
                 except Exception as e:
                     print(f"❌ Failed to initialize gimbal: {e}")

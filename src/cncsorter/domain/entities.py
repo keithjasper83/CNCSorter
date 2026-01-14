@@ -1,6 +1,6 @@
 """Domain entities for CNCSorter."""
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Any
+from typing import List, Tuple, Optional
 from datetime import datetime
 from uuid import UUID, uuid4
 import numpy as np

@@ -8,7 +8,7 @@ and area to classify objects for pick and place operations.
 
 import cv2
 import numpy as np
-from typing import Tuple, Dict, List, Optional
+from typing import Tuple, Dict, List
 from dataclasses import dataclass
 
 # Import domain entities

@@ -14,7 +14,7 @@ from cncsorter.application.events import (
     PickTaskCreated,
     BoundaryViolationDetected,
 )
-from cncsorter.domain.interfaces import DetectionRepository, WorkStatus, RepositoryError
+from cncsorter.domain.interfaces import DetectionRepository, RepositoryError
 
 
 class PersistenceSubscriber:

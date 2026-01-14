@@ -5,7 +5,7 @@ import serial
 import time
 import requests
 from ..domain.entities import CNCCoordinate
-from .motion_validator import MotionValidator, BoundaryViolationError
+from .motion_validator import MotionValidator
 
 
 class CNCController(ABC):

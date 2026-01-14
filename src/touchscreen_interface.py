@@ -6,8 +6,8 @@ Production-ready touchscreen interface optimized for Freenove display.
 Features touch-optimized controls, no keyboard input, comprehensive configuration.
 """
 
-from nicegui import ui, app
-from typing import Optional, List, Dict, Any
+from nicegui import ui
+from typing import Optional, List
 import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
@@ -16,8 +16,6 @@ from datetime import datetime
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
-from cncsorter.domain.interfaces import WorkStatus
-from cncsorter import config
 
 
 @dataclass

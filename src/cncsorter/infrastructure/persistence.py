@@ -10,7 +10,7 @@ from uuid import UUID
 import json
 
 from sqlalchemy import create_engine, Column, String, Float, DateTime, Integer, Text
-from sqlalchemy.orm import declarative_base, Session, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 
 from cncsorter.domain.interfaces import DetectionRepository, WorkStatus, RepositoryError
