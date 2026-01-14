@@ -7,7 +7,7 @@ Features touch-optimized controls, no keyboard input, comprehensive configuratio
 """
 
 from nicegui import ui
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
