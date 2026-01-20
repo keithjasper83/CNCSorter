@@ -457,7 +457,9 @@ class TouchscreenInterface:
         self.system_status = "STOPPED"
         self.cycle_progress = 0.0
         self.pick_service.stop()
-        # TODO: Integrate with CNC controller (send reset/halt command)
+        if self.cnc_controller.is_connected():
+            # Send soft-reset command to FluidNC
+            self.cnc_controller.send_command('\x18')
 
     def start_scan_cycle(self) -> None:
         """Start scan cycle."""
