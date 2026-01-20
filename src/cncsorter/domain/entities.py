@@ -93,6 +93,51 @@ class PickPlan:
 
 
 @dataclass
+class BinLocation:
+    """Represents a physical bin or drop-off location."""
+    bin_id: str
+    location: CNCCoordinate
+    accepted_types: List[str]
+    size_ranges: List[str] = field(default_factory=lambda: ["all"])
+
+
+@dataclass
+class PickOperation:
+    """Represents a single step in a pick plan (Move, Pick, Place, ChangeTool)."""
+    op_type: str  # "MOVE", "PICK", "PLACE", "TOOL_CHANGE"
+    target_coordinate: CNCCoordinate
+    details: str = ""
+    tool_id: Optional[str] = None
+    object_id: Optional[int] = None
+
+    def to_dict(self) -> dict:
+        return {
+            "type": self.op_type,
+            "x": self.target_coordinate.x,
+            "y": self.target_coordinate.y,
+            "z": self.target_coordinate.z,
+            "details": self.details,
+            "tool": self.tool_id,
+            "object": self.object_id
+        }
+
+
+@dataclass
+class PickPlan:
+    """An ordered sequence of operations to clear the bed."""
+    plan_id: str
+    operations: List[PickOperation]
+    estimated_duration_seconds: float
+    total_items: int
+    tool_changes: int
+    timestamp: Optional[datetime] = None
+
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+
+
+@dataclass
 class CapturedImage:
     """Represents a captured image from the camera."""
     image_id: str
