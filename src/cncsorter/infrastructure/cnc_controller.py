@@ -4,6 +4,7 @@ from typing import Optional
 import serial
 import time
 import requests
+import logging
 from ..domain.entities import CNCCoordinate
 from .motion_validator import MotionValidator, BoundaryViolationError
 
@@ -36,6 +37,11 @@ class CNCController(ABC):
         """Check if connected to the CNC controller."""
         pass
 
+    @abstractmethod
+    def send_command(self, command: str) -> bool:
+        """Send a raw command to the CNC controller."""
+        pass
+
 
 class FluidNCSerial(CNCController):
     """FluidNC controller implementation using serial communication."""
@@ -66,10 +72,10 @@ class FluidNCSerial(CNCController):
             )
             time.sleep(2)  # Wait for connection to stabilize
             self._connected = True
-            print(f"Connected to FluidNC on {self.port}")
+            logging.info(f"Connected to FluidNC on {self.port}")
             return True
         except serial.SerialException as e:
-            print(f"Failed to connect to FluidNC: {e}")
+            logging.error(f"Failed to connect to FluidNC: {e}")
             self._connected = False
             return False
     
@@ -78,8 +84,8 @@ class FluidNCSerial(CNCController):
         if self.serial_connection and self.serial_connection.is_open:
             self.serial_connection.close()
             self._connected = False
-            print("Disconnected from FluidNC")
-    
+            logging.info("Disconnected from FluidNC")
+
     def get_position(self) -> Optional[CNCCoordinate]:
         """Get current position from FluidNC using ? command."""
         if not self.is_connected():
@@ -91,22 +97,22 @@ class FluidNCSerial(CNCController):
             
             if not response_bytes:
                 # Timeout or no data received
-                print("No response received from FluidNC when requesting position")
+                logging.warning("No response received from FluidNC when requesting position")
                 return None
                 
             try:
                 response = response_bytes.decode('utf-8').strip()
             except UnicodeDecodeError as e:
-                print(f"Error decoding position response from FluidNC: {e}")
+                logging.error(f"Error decoding position response from FluidNC: {e}")
                 return None
             
             if not response:
-                print("Empty response received from FluidNC when requesting position")
+                logging.warning("Empty response received from FluidNC when requesting position")
                 return None
             
             # Parse response like: <Idle|MPos:0.000,0.000,0.000|...>
             if 'MPos:' not in response:
-                print(f"Unexpected position response format from FluidNC: {response}")
+                logging.warning(f"Unexpected position response format from FluidNC: {response}")
                 return None
 
             pos_section = response.split('MPos:', 1)[1]
@@ -118,7 +124,7 @@ class FluidNCSerial(CNCController):
 
             coords = [c.strip() for c in pos_str.split(',') if c.strip() != ""]
             if len(coords) < 2:
-                print(f"Incomplete coordinate data in FluidNC response: {response}")
+                logging.warning(f"Incomplete coordinate data in FluidNC response: {response}")
                 return None
 
             try:
@@ -126,13 +132,13 @@ class FluidNCSerial(CNCController):
                 y = float(coords[1])
                 z = float(coords[2]) if len(coords) > 2 else 0.0
             except (ValueError, IndexError) as e:
-                print(f"Error parsing coordinate values from FluidNC response '{response}': {e}")
+                logging.error(f"Error parsing coordinate values from FluidNC response '{response}': {e}")
                 return None
 
             return CNCCoordinate(x=x, y=y, z=z)
-        except Exception as e:
-            print(f"Error getting position: {e}")
-        
+        except (serial.SerialException, ValueError, IndexError) as e:
+            logging.error(f"Error getting position: {e}")
+
         return None
     
     def move_to(self, coordinate: CNCCoordinate) -> bool:
@@ -160,13 +166,24 @@ class FluidNCSerial(CNCController):
             command = f'G0 X{coordinate.x} Y{coordinate.y} Z{coordinate.z}\n'
             self.serial_connection.write(command.encode())
             return True
-        except Exception as e:
-            print(f"Error moving to position: {e}")
+        except serial.SerialException as e:
+            logging.error(f"Error moving to position: {e}")
             return False
     
     def is_connected(self) -> bool:
         """Check if connected to FluidNC."""
         return self._connected and self.serial_connection and self.serial_connection.is_open
+
+    def send_command(self, command: str) -> bool:
+        """Send a raw command to FluidNC via serial."""
+        if not self.is_connected():
+            return False
+        try:
+            self.serial_connection.write(command.encode())
+            return True
+        except serial.SerialException as e:
+            logging.error(f"Error sending command: {e}")
+            return False
 
 
 class FluidNCHTTP(CNCController):
@@ -192,18 +209,18 @@ class FluidNCHTTP(CNCController):
             response = requests.get(f'{self.base_url}/', timeout=5)
             self._connected = response.status_code == 200
             if self._connected:
-                print(f"Connected to FluidNC at {self.base_url}")
+                logging.info(f"Connected to FluidNC at {self.base_url}")
             return self._connected
         except requests.RequestException as e:
-            print(f"Failed to connect to FluidNC HTTP: {e}")
+            logging.error(f"Failed to connect to FluidNC HTTP: {e}")
             self._connected = False
             return False
     
     def disconnect(self):
         """Disconnect from FluidNC HTTP."""
         self._connected = False
-        print("Disconnected from FluidNC HTTP")
-    
+        logging.info("Disconnected from FluidNC HTTP")
+
     def get_position(self) -> Optional[CNCCoordinate]:
         """Get current position via HTTP API."""
         if not self.is_connected():
@@ -213,23 +230,23 @@ class FluidNCHTTP(CNCController):
             # FluidNC HTTP API endpoint for position status
             response = requests.get(f'{self.base_url}/command?commandText=?', timeout=2)
             if response.status_code != 200:
-                print(f"HTTP request failed with status code: {response.status_code}")
+                logging.warning(f"HTTP request failed with status code: {response.status_code}")
                 return None
             
             # Validate content type
             content_type = response.headers.get('content-type', '')
             if 'text' not in content_type.lower() and 'application' not in content_type.lower():
-                print(f"Unexpected content type from FluidNC HTTP: {content_type}")
+                logging.warning(f"Unexpected content type from FluidNC HTTP: {content_type}")
                 return None
             
             data = response.text
             if not data:
-                print("Empty response from FluidNC HTTP")
+                logging.warning("Empty response from FluidNC HTTP")
                 return None
             
             # Parse response similar to serial version
             if 'MPos:' not in data:
-                print(f"Unexpected HTTP response format from FluidNC: {data}")
+                logging.warning(f"Unexpected HTTP response format from FluidNC: {data}")
                 return None
             
             pos_section = data.split('MPos:', 1)[1]
@@ -241,7 +258,7 @@ class FluidNCHTTP(CNCController):
             
             coords = [c.strip() for c in pos_str.split(',') if c.strip() != ""]
             if len(coords) < 2:
-                print(f"Incomplete coordinate data in HTTP response: {data}")
+                logging.warning(f"Incomplete coordinate data in HTTP response: {data}")
                 return None
             
             try:
@@ -249,15 +266,15 @@ class FluidNCHTTP(CNCController):
                 y = float(coords[1])
                 z = float(coords[2]) if len(coords) > 2 else 0.0
             except (ValueError, IndexError) as e:
-                print(f"Error parsing coordinate values from HTTP response '{data}': {e}")
+                logging.error(f"Error parsing coordinate values from HTTP response '{data}': {e}")
                 return None
             
             return CNCCoordinate(x=x, y=y, z=z)
         except requests.RequestException as e:
-            print(f"HTTP request error getting position: {e}")
-        except Exception as e:
-            print(f"Error getting position via HTTP: {e}")
-        
+            logging.error(f"HTTP request error getting position: {e}")
+        except (ValueError, IndexError) as e:
+            logging.error(f"Error getting position via HTTP: {e}")
+
         return None
     
     def move_to(self, coordinate: CNCCoordinate) -> bool:
@@ -289,10 +306,26 @@ class FluidNCHTTP(CNCController):
                 timeout=5
             )
             return response.status_code == 200
-        except Exception as e:
-            print(f"Error moving to position via HTTP: {e}")
+        except requests.RequestException as e:
+            logging.error(f"Error moving to position via HTTP: {e}")
             return False
     
     def is_connected(self) -> bool:
         """Check if connected to FluidNC HTTP."""
         return self._connected
+
+    def send_command(self, command: str) -> bool:
+        """Send a raw command to FluidNC via HTTP API."""
+        if not self.is_connected():
+            return False
+
+        try:
+            response = requests.get(
+                f'{self.base_url}/command',
+                params={'commandText': command},
+                timeout=5
+            )
+            return response.status_code == 200
+        except requests.RequestException as e:
+            logging.error(f"Error sending command via HTTP: {e}")
+            return False

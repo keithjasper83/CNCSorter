@@ -9,7 +9,7 @@ description = "Production-ready CNC object detection and sorting system with DDD
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "keithjasper83", email = ""}
+    {name = "keithjasper83"}
 ]
 requires-python = ">=3.9"
 classifiers = [
