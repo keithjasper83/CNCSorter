@@ -124,7 +124,18 @@ class SortingConfig(BaseModel):
     default_bin: str
     path_optimization: str
 
+    @model_validator(mode='after')
+    def check_defaults(self) -> 'SortingConfig':
+        # Ensure the default_tool key exists in the tools dictionary
+        if self.default_tool not in self.tools:
+            raise ValueError(f"default_tool '{self.default_tool}' is not defined in tools")
 
+        # Ensure the default_bin matches one of the bin IDs
+        bin_ids = {bin_cfg.id for bin_cfg in self.bins}
+        if self.default_bin not in bin_ids:
+            raise ValueError(f"default_bin '{self.default_bin}' is not present in bins")
+
+        return self
 class ConfigModel(BaseModel):
     HARDWARE: HardwareConfig
     WORKSPACE: WorkspaceConfig
