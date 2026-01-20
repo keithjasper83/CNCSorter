@@ -50,7 +50,7 @@ Best for: Testing, small objects, overhead scanning
 | **Hardware** | M3 screws, nuts, bearings | 1 set | $5 |
 | **3D Printed Parts** | Pan/tilt mechanism | - | $6 (filament) |
 
-**Notes**: 
+**Notes**:
 - SG90 servos have limited torque (~1.8 kg⋅cm)
 - Best for lightweight cameras (Webcam, Pi Camera)
 - Not recommended for GoPro or iPhone without case
@@ -135,7 +135,7 @@ All STL files are in the `hardware/3d_prints/gimbal/` directory:
 #### 3-Axis Gimbal (Pro)
 1. **base_3axis.stl** - Heavy-duty base
 2. **pan_assembly.stl** - Pan mechanism
-3. **tilt_assembly.stl** - Tilt mechanism  
+3. **tilt_assembly.stl** - Tilt mechanism
 4. **roll_assembly.stl** - Roll mechanism
 5. **camera_cage.stl** - Adjustable camera cage
 
@@ -309,13 +309,13 @@ Similar to 2-axis, with additional roll mechanism between tilt and camera platfo
 3. **Test Range of Motion**:
    ```python
    from src.infrastructure.gimbal_controller import TwoAxisGimbal
-   
+
    gimbal = TwoAxisGimbal(pan_pin=17, tilt_pin=18)
-   
+
    # Test pan
    gimbal.move_to(GimbalPosition(pan=-90, tilt=0))
    gimbal.move_to(GimbalPosition(pan=90, tilt=0))
-   
+
    # Test tilt
    gimbal.move_to(GimbalPosition(pan=0, tilt=-90))
    gimbal.move_to(GimbalPosition(pan=0, tilt=90))
@@ -577,7 +577,7 @@ For unlimited continuous pan rotation without cable wrapping, a slip ring is ess
 - **Product Link**: https://thepihut.com/products/miniature-slip-ring-12mm-diameter-12-wires-max-240v-2a
 - **Specifications**:
   - Diameter: 12mm (most compact option!)
-  - Height: 20mm  
+  - Height: 20mm
   - Circuits: 12 wires (28 AWG, color coded)
   - Current: 2A per circuit (240VAC/DC max)
   - Contact Resistance: < 0.01Ω (gold plated contacts)
@@ -592,7 +592,7 @@ For unlimited continuous pan rotation without cable wrapping, a slip ring is ess
 - **Model**: MT0615 or similar (6 circuits, 15mm bore)
 - **Specifications**:
   - Diameter: 15mm
-  - Height: 20mm  
+  - Height: 20mm
   - Circuits: 6 wires
   - Current: 2A per circuit (240V max)
   - Contact Resistance: < 0.01Ω
@@ -615,7 +615,7 @@ For unlimited continuous pan rotation without cable wrapping, a slip ring is ess
 
 **Core Servo Circuits** (6 wires):
 1. **Circuit 1**: Servo power (+5V) - Red
-2. **Circuit 2**: Ground (GND) - Black  
+2. **Circuit 2**: Ground (GND) - Black
 3. **Circuit 3**: Pan servo signal (PWM) - Orange
 4. **Circuit 4**: Tilt servo signal (PWM) - Yellow
 5. **Circuit 5**: Roll servo signal (PWM) - Optional, for 3-axis
@@ -852,11 +852,11 @@ stabilizer.enable_auto_level()
 while True:
     # Read gyro orientation
     pitch, roll, yaw = stabilizer.get_orientation()
-    
+
     # Compensate gimbal position
     gimbal.set_tilt(target_tilt + pitch)  # Correct for pitch
     gimbal.set_roll(target_roll + roll)    # Correct for roll (3-axis only)
-    
+
     time.sleep(0.01)  # 100Hz update rate
 ```
 

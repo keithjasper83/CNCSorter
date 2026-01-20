@@ -103,28 +103,6 @@ class CNCConfig(BaseModel):
     safe_z_height_mm: float
 
 
-class ToolConfig(BaseModel):
-    id: str
-    offset_mm: Tuple[float, float, float]
-    handling_types: List[str]
-    tool_change_location: Dict[str, float]
-
-
-class BinConfig(BaseModel):
-    id: str
-    location: Dict[str, float]
-    accepts: List[str]
-    size_range: List[str]
-
-
-class SortingConfig(BaseModel):
-    tools: Dict[str, ToolConfig]
-    bins: List[BinConfig]
-    default_tool: str
-    default_bin: str
-    path_optimization: str
-
-
 class ConfigModel(BaseModel):
     HARDWARE: HardwareConfig
     WORKSPACE: WorkspaceConfig
@@ -132,7 +110,6 @@ class ConfigModel(BaseModel):
     BED_MAPPING: BedMappingConfig
     GIMBAL: GimbalConfig
     CNC: CNCConfig
-    SORTING: SortingConfig
 
     @model_validator(mode='after')
     def check_cnc_workspace_match(self) -> 'ConfigModel':
@@ -151,7 +128,6 @@ def validate_config_dict(config_module: Any) -> ConfigModel:
         "VISION": config_module.VISION,
         "BED_MAPPING": config_module.BED_MAPPING,
         "GIMBAL": config_module.GIMBAL,
-        "CNC": config_module.CNC,
-        "SORTING": config_module.SORTING
+        "CNC": config_module.CNC
     }
     return ConfigModel(**config_data)

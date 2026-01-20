@@ -209,7 +209,7 @@ The application should always be run from the **repository root** using one of t
 ```bash
 # ✅ Method 1: Use the launcher scripts (recommended):
 ./run.sh               # Mac/Linux
-./run_rpi.sh           # Raspberry Pi  
+./run_rpi.sh           # Raspberry Pi
 run.bat                # Windows
 ./run_gui.sh           # Touchscreen GUI
 
@@ -279,4 +279,3 @@ See [agents.md](agents.md) for coding standards, DDD principles, and SOC guideli
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
- 
