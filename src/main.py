@@ -14,7 +14,7 @@ from cncsorter.presentation.live_display import LiveStatusDisplay
 
 class CNCSorterApp:
     """Main CNCSorter application with live monitoring."""
-
+    
     def __init__(
         self,
         camera_index: int = 0,
@@ -23,7 +23,7 @@ class CNCSorterApp:
     ):
         """
         Initialize CNCSorter application.
-
+        
         Args:
             camera_index: Camera device index
             cnc_mode: CNC connection mode ("serial", "http", or "none")
@@ -32,25 +32,25 @@ class CNCSorterApp:
         self.camera_index = camera_index
         self.cnc_mode = cnc_mode
         self.cnc_config = cnc_config or {}
-
+        
         # Initialize components
         self.vision_system: Optional[VisionSystem] = None
         self.cnc_controller: Optional[CNCController] = None
         self.bed_mapping_service: Optional[BedMappingService] = None
         self.display: Optional[LiveStatusDisplay] = None
-
+        
         # Settings
         self.threshold = 127
         self.min_area = 150
-
+        
         # Performance tracking
         self.last_frame_time = time.time()
         self.fps = 0.0
-
+    
     def initialize(self) -> bool:
         """
         Initialize all components.
-
+        
         Returns:
             True if initialization successful
         """
@@ -69,12 +69,12 @@ class CNCSorterApp:
         except Exception as e:
             print(f"Configuration validation failed: {e}")
             return False
-
+        
         # Initialize display
         self.display = LiveStatusDisplay()
         self.display.update(status="Initializing components...", stage="STARTUP", progress=10)
         self.display.wait_key(100)
-
+        
         # Initialize vision system
         print(f"Initializing vision system (camera {self.camera_index})...")
         self.vision_system = VisionSystem(self.camera_index)
@@ -85,7 +85,7 @@ class CNCSorterApp:
             print("\nThe application cannot start without a working camera.")
             print("Please fix the camera issue and try again.")
             print("!"*60 + "\n")
-
+            
             if self.display:
                 self.display.update(
                     status=f"FATAL: Cannot open camera {self.camera_index}",
@@ -93,14 +93,14 @@ class CNCSorterApp:
                 )
                 self.display.wait_key(5000)
             return False
-
+        
         self.display.update(status="Camera initialized", stage="STARTUP", progress=30)
         self.display.wait_key(100)
-
+        
         # Initialize CNC controller if requested
         if self.cnc_mode != "none":
             print(f"Initializing CNC controller ({self.cnc_mode})...")
-
+            
             if self.cnc_mode == "serial":
                 port = self.cnc_config.get('port', '/dev/ttyUSB0')
                 baudrate = self.cnc_config.get('baudrate', 115200)
@@ -113,11 +113,11 @@ class CNCSorterApp:
                 port = self.cnc_config.get('mock_port', 5000)
                 speed = self.cnc_config.get('mock_speed', 100.0)
                 self.cnc_controller = MockCNCController(port=port, speed=speed)
-
+            
             if self.cnc_controller:
                 self.display.update(status="Connecting to CNC...", stage="STARTUP", progress=50)
                 self.display.wait_key(100)
-
+                
                 if not self.cnc_controller.connect():
                     print("Warning: Failed to connect to CNC controller")
                     self.display.update(
@@ -130,7 +130,7 @@ class CNCSorterApp:
                 else:
                     self.display.update(status="CNC connected", stage="STARTUP", progress=70)
                     self.display.wait_key(100)
-
+        
         # Initialize bed mapping service
         print("Initializing bed mapping service...")
         image_stitcher = ImageStitcher()
@@ -139,13 +139,13 @@ class CNCSorterApp:
             self.cnc_controller,
             image_stitcher
         )
-
+        
         self.display.update(status="Ready to start", stage="READY", progress=100)
         self.display.wait_key(500)
-
+        
         print("Initialization complete!")
         return True
-
+    
     def update_fps(self):
         """Update FPS calculation."""
         current_time = time.time()
@@ -153,7 +153,7 @@ class CNCSorterApp:
         if delta > 0:
             self.fps = 1.0 / delta
         self.last_frame_time = current_time
-
+    
     def run(self):
         """Run the main application loop."""
         if not self.initialize():
@@ -164,7 +164,7 @@ class CNCSorterApp:
             print("Please resolve the issues above and try again.")
             print("="*60 + "\n")
             return
-
+        
         print("\n" + "=" * 50)
         print("CNCSorter - Running")
         print("=" * 50)
@@ -175,16 +175,16 @@ class CNCSorterApp:
         print("  [V]     - Save current map")
         print("  [Q]     - Quit application")
         print("=" * 50 + "\n")
-
+        
         current_map = None
-
+        
         try:
             while True:
                 self.update_fps()
-
+                
                 # Capture frame
                 frame = self.vision_system.capture_frame()
-
+                
                 if frame is None:
                     self.display.update(
                         status="Error: No camera feed",
@@ -195,23 +195,23 @@ class CNCSorterApp:
                     if key == ord('q'):
                         break
                     continue
-
+                
                 # Detect objects in current frame
                 detected_objects = self.vision_system.detect_objects(
                     frame,
                     self.threshold,
                     self.min_area
                 )
-
+                
                 # Get CNC position if available
                 cnc_pos = None
                 if self.cnc_controller and self.cnc_controller.is_connected():
                     cnc_pos = self.cnc_controller.get_position()
-
+                
                 # Update display
                 images_count = len(current_map.images) if current_map else 0
                 total_objects = len(current_map.all_objects) if current_map else 0
-
+                
                 self.display.update(
                     frame=frame,
                     detected_objects=detected_objects,
@@ -222,14 +222,14 @@ class CNCSorterApp:
                     objects_count=total_objects,
                     fps=self.fps
                 )
-
+                
                 # Handle key press
                 key = self.display.wait_key(1)
-
+                
                 if key == ord('q'):
                     print("Quit requested")
                     break
-
+                
                 elif key == ord('s'):
                     # Start new map
                     print("\n[KEY: S] Starting new bed map...")
@@ -241,7 +241,7 @@ class CNCSorterApp:
                     )
                     print("✓ Bed map started successfully")
                     time.sleep(1.5)
-
+                
                 elif key == ord(' '):
                     if current_map is None:
                         print("\n[KEY: SPACE] ERROR: No active map! Press 'S' to start a new map first")
@@ -255,13 +255,13 @@ class CNCSorterApp:
                         print(f"\n[KEY: SPACE] Capturing image {len(current_map.images) + 1}...")
                         self.display.update(status="📷 Capturing image...", stage="CAPTURING")
                         self.display.wait_key(100)
-
+                        
                         captured = self.bed_mapping_service.capture_and_add_image(
                             threshold=self.threshold,
                             min_area=self.min_area,
                             progress_callback=lambda msg: self.display.update(status=msg)
                         )
-
+                        
                         if captured:
                             progress = min(90, len(current_map.images) * 10)
                             status_msg = f"✓ Image {len(current_map.images)} captured: {len(captured.detected_objects)} objects"
@@ -274,7 +274,7 @@ class CNCSorterApp:
                         else:
                             print("✗ Failed to capture image")
                         time.sleep(1)
-
+                
                 elif key == ord('m'):
                     if current_map is None:
                         print("\n[KEY: M] ERROR: No active map! Press 'S' to start a new map first")
@@ -299,11 +299,11 @@ class CNCSorterApp:
                             progress=50
                         )
                         self.display.wait_key(100)
-
+                        
                         success = self.bed_mapping_service.stitch_current_map(
                             progress_callback=lambda msg: self.display.update(status=msg)
                         )
-
+                        
                         if success:
                             self.display.update(
                                 status="✓ Stitching complete!",
@@ -318,7 +318,7 @@ class CNCSorterApp:
                             )
                             print("✗ Stitching failed")
                         time.sleep(2)
-
+                
                 elif key == ord('v'):
                     if current_map is None:
                         print("\n[KEY: V] ERROR: No active map! Press 'S' to start a new map first")
@@ -339,7 +339,7 @@ class CNCSorterApp:
                         print(f"\n[KEY: V] Saving map with {len(current_map.images)} images...")
                         self.display.update(status="💾 Saving map to disk...", stage="PROCESSING")
                         self.display.wait_key(100)
-
+                        
                         if self.bed_mapping_service.save_map_images():
                             self.display.update(
                                 status=f"✓ Map saved! ({len(current_map.images)} images)",
@@ -353,35 +353,35 @@ class CNCSorterApp:
                             )
                             print("✗ Failed to save map")
                         time.sleep(2)
-
+        
         except KeyboardInterrupt:
             print("\nInterrupted by user")
-
+        
         finally:
             self.cleanup()
-
+    
     def cleanup(self):
         """Clean up resources."""
         print("\n" + "="*60)
         print("SHUTTING DOWN")
         print("="*60)
-
+        
         if self.display:
             self.display.update(status="Shutting down...", stage="SHUTDOWN")
             self.display.wait_key(500)
-
+        
         if self.vision_system:
             print("Closing camera...")
             self.vision_system.close_camera()
-
+        
         if self.cnc_controller:
             print("Disconnecting CNC controller...")
             self.cnc_controller.disconnect()
-
+        
         if self.display:
             print("Closing display...")
             self.display.close()
-
+        
         print("="*60)
         print("Application closed successfully")
         print("="*60 + "\n")
@@ -391,7 +391,7 @@ def main():
     """Main entry point."""
     # Parse command line arguments for CNC configuration
     import argparse
-
+    
     parser = argparse.ArgumentParser(description='CNCSorter - CNC Object Detection and Mapping')
     parser.add_argument('--camera', type=int, default=0, help='Camera device index')
     parser.add_argument('--cnc-mode', choices=['none', 'serial', 'http', 'mock'], default='none',
@@ -406,9 +406,9 @@ def main():
                        help='HTTP port for CNC (http mode)')
     parser.add_argument('--mock-port', type=int, default=5000,
                        help='Web server port for Mock CNC (mock mode)')
-
+    
     args = parser.parse_args()
-
+    
     # Build CNC config
     cnc_config = {
         'port': args.cnc_port,
@@ -418,14 +418,14 @@ def main():
         'mock_port': args.mock_port,
         'mock_speed': 200.0
     }
-
+    
     # Create and run application
     app = CNCSorterApp(
         camera_index=args.camera,
         cnc_mode=args.cnc_mode,
         cnc_config=cnc_config
     )
-
+    
     app.run()
 
 

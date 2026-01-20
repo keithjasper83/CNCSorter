@@ -1,10 +1,17 @@
-import asyncio
+"""Service for planning efficient pick and place operations."""
+import math
 import logging
-from typing import List, Optional, Callable
-from cncsorter.domain.entities import PickTask, CNCCoordinate
-from cncsorter.domain.interfaces import WorkStatus, DetectionRepository
-from cncsorter.infrastructure.cnc_controller import CNCController
-from cncsorter.config import CNC
+from typing import List, Dict, Any, Optional, Tuple
+from uuid import uuid4
+
+from cncsorter.domain.entities import (
+    DetectedObject,
+    CNCCoordinate,
+    PickPlan,
+    PickOperation,
+    BinLocation
+)
+from cncsorter.config import SORTING, OBJECTS, CNC
 
 logger = logging.getLogger(__name__)
 

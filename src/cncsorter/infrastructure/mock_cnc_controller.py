@@ -7,10 +7,10 @@ system's operation without physical hardware.
 import threading
 import time
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, Response
 
 from cncsorter.domain.entities import CNCCoordinate
 from cncsorter.infrastructure.cnc_controller import CNCController

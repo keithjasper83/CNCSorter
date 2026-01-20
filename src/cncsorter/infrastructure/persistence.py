@@ -10,7 +10,7 @@ from uuid import UUID
 import json
 
 from sqlalchemy import create_engine, Column, String, Float, DateTime, Integer, Text
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, Session, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 
 from cncsorter.domain.interfaces import DetectionRepository, WorkStatus, RepositoryError
@@ -34,7 +34,7 @@ class DetectedObjectModel(Base):
     # Core detection data
     object_id = Column(Integer, nullable=False)
     timestamp = Column(DateTime, nullable=False, index=True)
-
+    
     # Spatial data
     x = Column(Float, nullable=True)
     y = Column(Float, nullable=True)
@@ -42,20 +42,20 @@ class DetectedObjectModel(Base):
     center_x = Column(Float, nullable=False)
     center_y = Column(Float, nullable=False)
     area = Column(Float, nullable=False)
-
+    
     # Bounding box as JSON
     bounding_box = Column(Text, nullable=False)
-
+    
     # Contour points as JSON
     contour_points = Column(Text, nullable=False)
-
+    
     # Classification
     classification = Column(String(100), nullable=False, index=True)
     confidence = Column(Float, nullable=False)
-
+    
     # Processing status
     work_status = Column(String(20), nullable=False, default=WorkStatus.PENDING.value, index=True)
-
+    
     # Optional metadata
     source_camera = Column(Integer, nullable=True)
     bed_map_id = Column(String(100), nullable=True, index=True)
@@ -198,10 +198,10 @@ class SQLiteDetectionRepository(DetectionRepository):
             model = session.query(DetectedObjectModel).filter(
                 DetectedObjectModel.uuid == str(object_id)
             ).first()
-
+            
             if model is None:
                 raise RepositoryError(f"Object not found: {object_id}")
-
+            
             model.work_status = status.value
             session.commit()
         except SQLAlchemyError as e:
