@@ -49,7 +49,7 @@ echo -e "${GREEN}✓ Python version: $(python3 --version)${NC}"
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}Creating virtual environment...${NC}"
     python3 -m venv venv
-
+    
     if [ $? -ne 0 ]; then
         echo -e "${RED}Error: Failed to create virtual environment.${NC}"
         echo "This could be because:"
@@ -58,12 +58,12 @@ if [ ! -d "venv" ]; then
         echo "  3. Permission issues"
         exit 1
     fi
-
+    
     if [ ! -d "venv" ]; then
         echo -e "${RED}Error: Virtual environment directory not created.${NC}"
         exit 1
     fi
-
+    
     echo -e "${GREEN}✓ Virtual environment created${NC}"
 else
     echo -e "${GREEN}✓ Virtual environment exists${NC}"

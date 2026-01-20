@@ -17,76 +17,61 @@ from cncsorter.domain.entities import DetectedObject, CNCCoordinate
 @dataclass
 class DomainEvent:
     """Base class for all domain events."""
-    pass
+    
+    timestamp: datetime = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
 
 
 @dataclass
 class ObjectsDetected(DomainEvent):
     """Event fired when objects are detected by vision system."""
     
-    detected_objects: List[DetectedObject]
-    image_id: str
-    camera_index: int
+    detected_objects: List[DetectedObject] = None
+    image_id: str = None
+    camera_index: int = 0
     timestamp: datetime = None
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
 
 @dataclass
 class BedMapCompleted(DomainEvent):
     """Event fired when bed mapping process completes."""
     
-    bed_map_id: str
-    total_objects: int
-    image_count: int
+    bed_map_id: str = None
+    total_objects: int = 0
+    image_count: int = 0
     timestamp: datetime = None
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
 
 @dataclass
 class CNCPositionUpdated(DomainEvent):
     """Event fired when CNC machine position changes."""
     
-    position: CNCCoordinate
+    position: CNCCoordinate = None
     previous_position: CNCCoordinate = None
     timestamp: datetime = None
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
 
 @dataclass
 class PickTaskCreated(DomainEvent):
     """Event fired when a pick task is generated for CNC."""
     
-    task_id: str
-    object_id: UUID
-    target_position: CNCCoordinate
+    task_id: str = None
+    object_id: UUID = None
+    target_position: CNCCoordinate = None
     timestamp: datetime = None
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
 
 @dataclass
 class BoundaryViolationDetected(DomainEvent):
     """Event fired when a boundary violation is detected."""
     
-    attempted_position: CNCCoordinate
-    boundary_type: str
-    message: str
+    attempted_position: CNCCoordinate = None
+    boundary_type: str = None
+    message: str = None
     timestamp: datetime = None
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
 
 # Event Bus

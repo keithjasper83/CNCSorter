@@ -6,15 +6,15 @@ The CNCSorter touchscreen interface has been consolidated into a single, compreh
 
 ## Key Features
 
-✅ **Touch-Optimized**: Large buttons (80px+ height), no keyboard input required
-✅ **Multi-Platform**: Raspberry Pi, Mac, Windows, Linux
-✅ **Simulator Mode**: Test on Mac without hardware
-✅ **Web-Based**: Access from any device on network
-✅ **Python-Native**: Single codebase, no separate frontend
-✅ **Lightweight**: ~2MB total (vs React's 100MB+)
-✅ **Hardware Integration**: Direct camera and CNC control
-✅ **EventBus Integration**: Real-time updates
-✅ **Persistent Configuration**: JSON-based settings
+✅ **Touch-Optimized**: Large buttons (80px+ height), no keyboard input required  
+✅ **Multi-Platform**: Raspberry Pi, Mac, Windows, Linux  
+✅ **Simulator Mode**: Test on Mac without hardware  
+✅ **Web-Based**: Access from any device on network  
+✅ **Python-Native**: Single codebase, no separate frontend  
+✅ **Lightweight**: ~2MB total (vs React's 100MB+)  
+✅ **Hardware Integration**: Direct camera and CNC control  
+✅ **EventBus Integration**: Real-time updates  
+✅ **Persistent Configuration**: JSON-based settings  
 
 ## Quick Start
 
@@ -58,7 +58,7 @@ Options:
 - **Hardware Control**: Start/stop camera, connect/disconnect CNC
 - **System Status**: Real-time status indicator, detected items count
 - **Scan Progress**: Visual progress bar
-- **Action Buttons**:
+- **Action Buttons**: 
   - START SCAN CYCLE (green, 100px height)
   - PICK & PLACE (blue, 100px height)
   - STOP (red)

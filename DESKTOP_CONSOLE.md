@@ -6,11 +6,11 @@ The Desktop/Operator Console provides a full-featured development and testing en
 
 ## Key Features
 
-✅ **Real Object Detection**: Uses your Mac's built-in webcam or external cameras
-✅ **Live Camera Feed**: See real-time object detection with bounding boxes
-✅ **Simulated CNC**: CNC movements are simulated (no hardware needed)
-✅ **Full Data Pipeline**: Objects are saved to SQLite database
-✅ **EventBus Integration**: Uses the same event system as production
+✅ **Real Object Detection**: Uses your Mac's built-in webcam or external cameras  
+✅ **Live Camera Feed**: See real-time object detection with bounding boxes  
+✅ **Simulated CNC**: CNC movements are simulated (no hardware needed)  
+✅ **Full Data Pipeline**: Objects are saved to SQLite database  
+✅ **EventBus Integration**: Uses the same event system as production  
 ✅ **Perfect Testing Environment**: Test complete workflows on your Mac
 
 ## Quick Start
@@ -278,10 +278,10 @@ CREATE TABLE detected_objects (
 
 ### Benefits Over Direct Pi Testing
 
-✅ **Faster Iteration**: No need to deploy to Pi for each change
-✅ **Easier Debugging**: Full Mac development tools available
-✅ **No Hardware Risk**: Can't damage CNC during development
-✅ **Full Data Access**: Easy SQLite access for verification
+✅ **Faster Iteration**: No need to deploy to Pi for each change  
+✅ **Easier Debugging**: Full Mac development tools available  
+✅ **No Hardware Risk**: Can't damage CNC during development  
+✅ **Full Data Access**: Easy SQLite access for verification  
 ✅ **Real Detection**: Uses actual camera, not simulated objects
 
 ## Integration with Other Interfaces
@@ -339,7 +339,7 @@ Adjust detection sensitivity:
 # In _detection_loop():
 
 objects = self.vision_system.detect_objects(
-    frame,
+    frame, 
     threshold=100,   # Lower = more sensitive (default 127)
     min_area=100     # Lower = detect smaller objects (default 150)
 )
