@@ -637,3 +637,67 @@ def print_configuration_summary():
 
 if __name__ == "__main__":
     print_configuration_summary()
+
+# ============================================================================
+# SORTING STRATEGY & TOOLING CONFIGURATION
+# ============================================================================
+
+SORTING = {
+    # Available tools and which item types they handle
+    "tools": {
+        "magnet_tool": {
+            "id": "magnet_head_v1",
+            "offset_mm": (0, 0, 0),  # Offset from spindle center
+            "handling_types": ["nut", "bolt", "washer", "spring_washer", "hex_bolt", "M2", "M3", "M4", "M5", "M6", "M8", "M10", "M12"],
+            "tool_change_location": {"x": 10, "y": 10, "z": 50},
+        },
+        "suction_tool": {
+            "id": "suction_cup_5mm",
+            "offset_mm": (20, 0, 0),
+            "handling_types": ["plastic", "nylon", "pcb", "unknown"],
+            "tool_change_location": {"x": 10, "y": 50, "z": 50},
+        }
+    },
+
+    # Destination bins
+    # Location is the center of the bin/drop-off point
+    "bins": [
+        {
+            "id": "bin_nuts_m2_m6",
+            "location": {"x": 750, "y": 50, "z": 10},
+            "accepts": ["nut"],
+            "size_range": ["tiny", "small"]
+        },
+        {
+            "id": "bin_nuts_m8_plus",
+            "location": {"x": 750, "y": 150, "z": 10},
+            "accepts": ["nut"],
+            "size_range": ["medium", "large"]
+        },
+        {
+            "id": "bin_bolts",
+            "location": {"x": 750, "y": 250, "z": 10},
+            "accepts": ["bolt", "hex_bolt"],
+            "size_range": ["all"]
+        },
+        {
+            "id": "bin_washers",
+            "location": {"x": 750, "y": 350, "z": 10},
+            "accepts": ["washer", "spring_washer"],
+            "size_range": ["all"]
+        },
+        {
+            "id": "bin_rejects",
+            "location": {"x": 700, "y": 350, "z": 10},
+            "accepts": ["unknown", "debris"],
+            "size_range": ["all"]
+        }
+    ],
+
+    # Default behavior
+    "default_tool": "magnet_tool",
+    "default_bin": "bin_rejects",
+
+    # Optimization
+    "path_optimization": "nearest_neighbor",  # tsp_approx, nearest_neighbor
+}
