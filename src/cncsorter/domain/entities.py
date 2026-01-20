@@ -85,7 +85,7 @@ class PickPlan:
     estimated_duration_seconds: float
     total_items: int
     tool_changes: int
-    timestamp: datetime = None
+    timestamp: Optional[datetime] = None
 
     def __post_init__(self):
         if self.timestamp is None:
