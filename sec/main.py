@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import threading
+import threading
 
 def nothing(x):
     pass
@@ -57,9 +59,11 @@ while True:
     if key == ord('q'):
         break
     elif key == ord('s'):
-        # Save the current view for your commute notes
-        cv2.imwrite(f"snapshot_{obj_count}_objs.jpg", frame)
-        print("Snapshot saved!")
+        # Save the current view in a separate thread
+        filename = f"snapshot_{obj_count}_objs.jpg"
+        thread = threading.Thread(target=cv2.imwrite, args=(filename, frame.copy()))
+        thread.start()
+        print(f"Started saving {filename} in the background.")
 
 cap.release()
 cv2.destroyAllWindows()
