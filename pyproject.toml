@@ -9,7 +9,7 @@ description = "Production-ready CNC object detection and sorting system with DDD
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "keithjasper83", email = ""}
+    {name = "keithjasper83"}
 ]
 requires-python = ">=3.9"
 classifiers = [
@@ -32,8 +32,6 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "flask>=3.0.0",
     "pydantic>=2.0.0",
-    "nicegui>=1.4.0",
-    "fastapi>=0.104.0",
 ]
 
 [project.optional-dependencies]

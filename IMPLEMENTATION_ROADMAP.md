@@ -1,8 +1,8 @@
 # CNCSorter Implementation Roadmap
 ## Consolidated Technical Upgrade Plan - Execution Guide
 
-**Status**: Ready for implementation
-**Version**: v2.0.0-dev
+**Status**: Ready for implementation  
+**Version**: v2.0.0-dev  
 **Target**: Production-ready industrial-grade CNC automation system
 
 ---
@@ -42,14 +42,14 @@ install_requires=[
 ]
 ```
 
-**Dependencies**: None
-**Estimated Time**: 4 hours
+**Dependencies**: None  
+**Estimated Time**: 4 hours  
 **Testing**: `pip install -e .` validation
 
 ---
 
 ### 1.2 Persistence Layer (Domain + Infrastructure) 🔥 CRITICAL
-**Files**:
+**Files**: 
 - `src/cncsorter/domain/interfaces.py` (NEW)
 - `src/cncsorter/infrastructure/persistence.py` (NEW)
 - `src/cncsorter/domain/entities.py` (EXTEND)
@@ -71,17 +71,17 @@ class WorkStatus(Enum):
 
 class DetectionRepository(ABC):
     """Abstract repository for detected object persistence."""
-
+    
     @abstractmethod
     def save(self, detected_object: DetectedObject) -> None:
         """Save a detected object to persistent storage."""
         pass
-
+    
     @abstractmethod
     def list_pending(self) -> List[DetectedObject]:
         """Retrieve all pending objects."""
         pass
-
+    
     @abstractmethod
     def update_status(self, object_id: UUID, status: WorkStatus) -> None:
         """Update object processing status."""
@@ -101,7 +101,7 @@ Base = declarative_base()
 class DetectionRecord(Base):
     """SQLAlchemy ORM model for detected objects."""
     __tablename__ = 'detections'
-
+    
     id = Column(String, primary_key=True)
     timestamp = Column(DateTime, index=True)
     x = Column(Float)
@@ -115,7 +115,7 @@ class DetectionRecord(Base):
 
 class SQLiteDetectionRepository(DetectionRepository):
     """SQLite implementation of detection repository."""
-
+    
     def __init__(self, db_path: str = "cnc_detections.db"):
         self.engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(self.engine)
@@ -131,14 +131,14 @@ class SQLiteDetectionRepository(DetectionRepository):
 - No SQLAlchemy imports outside infrastructure
 - Repository injected via dependency injection
 
-**Dependencies**: setup.py (for SQLAlchemy)
-**Estimated Time**: 8 hours
+**Dependencies**: setup.py (for SQLAlchemy)  
+**Estimated Time**: 8 hours  
 **Testing**: Unit tests with in-memory SQLite
 
 ---
 
 ### 1.3 Event-Driven Orchestration (Application Layer) 🔥 CRITICAL
-**Files**:
+**Files**: 
 - `src/cncsorter/application/events.py` (NEW)
 - `src/cncsorter/application/event_bus.py` (NEW)
 - `src/cncsorter/infrastructure/vision.py` (MODIFY)
@@ -167,7 +167,7 @@ class BedMapCompleted(DomainEvent):
     """Event published when bed mapping completes."""
     bed_map_id: str
     total_objects: int
-
+    
 @dataclass
 class CNCPositionUpdated(DomainEvent):
     """Event published on CNC position change."""
@@ -177,16 +177,16 @@ class CNCPositionUpdated(DomainEvent):
 
 class EventBus:
     """Lightweight synchronous event bus for decoupling."""
-
+    
     def __init__(self):
         self._subscribers: Dict[type, List[Callable]] = {}
-
+    
     def subscribe(self, event_type: type, handler: Callable[[Any], None]) -> None:
         """Subscribe to an event type."""
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
         self._subscribers[event_type].append(handler)
-
+    
     def publish(self, event: DomainEvent) -> None:
         """Publish an event to all subscribers."""
         event_type = type(event)
@@ -209,14 +209,14 @@ class EventBus:
 2. **GUISubscriber**: Updates live display
 3. **AutomationSubscriber**: Generates pick tasks (future)
 
-**Dependencies**: 1.2 Persistence Layer
-**Estimated Time**: 10 hours
+**Dependencies**: 1.2 Persistence Layer  
+**Estimated Time**: 10 hours  
 **Testing**: Unit tests with mock subscribers
 
 ---
 
 ### 1.4 Motion Validator (CNC Safety Interceptor) 🔥 CRITICAL
-**Files**:
+**Files**: 
 - `src/cncsorter/infrastructure/motion_validator.py` (NEW)
 - `src/cncsorter/infrastructure/cnc_controller.py` (MODIFY)
 
@@ -240,14 +240,14 @@ class WorkspaceLimits:
 
 class MotionValidator:
     """Validates all CNC motions against workspace limits."""
-
+    
     def __init__(self, limits: WorkspaceLimits = WorkspaceLimits()):
         self.limits = limits
-
+    
     def validate_gcode(self, gcode: str) -> None:
         """
         Validate G-code command before execution.
-
+        
         Raises:
             BoundaryViolationError: If motion exceeds workspace limits
         """
@@ -255,9 +255,9 @@ class MotionValidator:
         target = self._extract_coordinates(gcode)
         if target is None:
             return  # Not a movement command
-
+        
         x, y, z = target
-
+        
         # Validate boundaries
         if x is not None and x > self.limits.x_max:
             raise BoundaryViolationError(f"X={x} exceeds max {self.limits.x_max}")
@@ -265,16 +265,16 @@ class MotionValidator:
             raise BoundaryViolationError(f"Y={y} exceeds max {self.limits.y_max}")
         if z is not None and z > self.limits.z_max:
             raise BoundaryViolationError(f"Z={z} exceeds max {self.limits.z_max}")
-
+    
     def _extract_coordinates(self, gcode: str) -> Optional[Tuple[Optional[float], Optional[float], Optional[float]]]:
         """Extract X, Y, Z from G-code movement command."""
         if not gcode.startswith(('G0', 'G1', 'G00', 'G01')):
             return None
-
+        
         x = self._extract_axis(gcode, 'X')
         y = self._extract_axis(gcode, 'Y')
         z = self._extract_axis(gcode, 'Z')
-
+        
         return (x, y, z)
 ```
 
@@ -284,14 +284,14 @@ class MotionValidator:
 - On violation: raise exception, publish event, block command
 - Applies to FluidNCSerial, FluidNCHTTP, and MockCNCController
 
-**Dependencies**: 1.3 Event Bus
-**Estimated Time**: 6 hours
+**Dependencies**: 1.3 Event Bus  
+**Estimated Time**: 6 hours  
 **Testing**: Unit tests with boundary violation scenarios
 
 ---
 
-### 1.5 Mock CNC Controller (Digital Twin)
-**Files**:
+### 1.5 Mock CNC Controller (Digital Twin) 
+**Files**: 
 - `src/cncsorter/infrastructure/mock_cnc.py` (NEW)
 - `src/cncsorter/config.py` (MODIFY)
 
@@ -308,17 +308,17 @@ class MockCNCController:
     Mock CNC controller for CI testing and development.
     Implements same interface as serial/HTTP controllers.
     """
-
+    
     def __init__(self, log_file: str = "mock_cnc_log.json"):
         self.position = (0.0, 0.0, 0.0)
         self.log_file = log_file
         self._log_entries = []
-
+    
     def connect(self) -> bool:
         """Simulate connection."""
         logging.info("MockCNCController: Connected")
         return True
-
+    
     def send_gcode(self, gcode: str) -> None:
         """Log G-code and simulate position update."""
         entry = {
@@ -326,19 +326,19 @@ class MockCNCController:
             "gcode": gcode,
             "position_before": self.position
         }
-
+        
         # Simulate position update
         if gcode.startswith(('G0', 'G1')):
             self._update_position_from_gcode(gcode)
-
+        
         entry["position_after"] = self.position
         self._log_entries.append(entry)
-
+        
         # Write to JSON log
         with open(self.log_file, 'a') as f:
             json.dump(entry, f)
             f.write('\n')
-
+    
     def get_position(self) -> Tuple[float, float, float]:
         """Return simulated position."""
         return self.position
@@ -350,14 +350,14 @@ class MockCNCController:
 CNC_MODE = "mock"  # Options: "serial", "http", "mock"
 ```
 
-**Dependencies**: 1.4 MotionValidator
-**Estimated Time**: 4 hours
+**Dependencies**: 1.4 MotionValidator  
+**Estimated Time**: 4 hours  
 **Testing**: Integration tests with mock controller
 
 ---
 
-### 1.6 Structured Logging System
-**Files**:
+### 1.6 Structured Logging System 
+**Files**: 
 - `src/cncsorter/infrastructure/logging_config.py` (NEW)
 - All modules (MODIFY imports)
 
@@ -372,7 +372,7 @@ from typing import Dict, Any
 
 class JSONFormatter(logging.Formatter):
     """Format logs as JSON for machine readability."""
-
+    
     def format(self, record: logging.LogRecord) -> str:
         log_data: Dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -383,13 +383,13 @@ class JSONFormatter(logging.Formatter):
             "function": record.funcName,
             "line": record.lineno,
         }
-
+        
         if hasattr(record, 'correlation_id'):
             log_data['correlation_id'] = record.correlation_id
-
+        
         if record.exc_info:
             log_data['exception'] = self.formatException(record.exc_info)
-
+        
         return json.dumps(log_data)
 
 def setup_logging(
@@ -399,7 +399,7 @@ def setup_logging(
 ) -> None:
     """
     Configure structured logging with rotation.
-
+    
     Args:
         log_file: Path to log file
         log_level: Logging level
@@ -411,18 +411,18 @@ def setup_logging(
         maxBytes=10*1024*1024,
         backupCount=5
     )
-
+    
     if json_format:
         handler.setFormatter(JSONFormatter())
     else:
         handler.setFormatter(logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         ))
-
+    
     # Configure root logger
     logging.root.setLevel(log_level)
     logging.root.addHandler(handler)
-
+    
     # Add console handler for development
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
@@ -435,14 +435,14 @@ def setup_logging(
 - Correlation ID per run
 - Machine-readable diagnostics
 
-**Dependencies**: None
-**Estimated Time**: 4 hours
+**Dependencies**: None  
+**Estimated Time**: 4 hours  
 **Testing**: Log file generation and rotation tests
 
 ---
 
 ### 1.7 Unit Test Framework (pytest)
-**Files**:
+**Files**: 
 - `tests/conftest.py` (NEW)
 - `tests/unit/test_persistence.py` (NEW)
 - `tests/unit/test_events.py` (NEW)
@@ -470,14 +470,14 @@ def in_memory_db():
 - Event bus: 95%
 - Motion validator: 100%
 
-**Dependencies**: All Phase 1 features
-**Estimated Time**: 12 hours
+**Dependencies**: All Phase 1 features  
+**Estimated Time**: 12 hours  
 **Testing**: Run `pytest --cov=src` for coverage report
 
 ---
 
 ### 1.8 Configuration Validation (Pydantic)
-**Files**:
+**Files**: 
 - `src/cncsorter/config.py` (REWRITE with Pydantic)
 
 **Implementation**:
@@ -492,7 +492,7 @@ class WorkspaceConfig(BaseModel):
     x_max: float = Field(800.0, description="Maximum X coordinate (mm)")
     y_max: float = Field(400.0, description="Maximum Y coordinate (mm)")
     z_max: float = Field(300.0, description="Maximum Z coordinate (mm)")
-
+    
     @validator('x_max', 'y_max', 'z_max')
     def check_positive(cls, v):
         if v <= 0:
@@ -518,11 +518,11 @@ class SystemConfig(BaseModel):
     workspace: WorkspaceConfig = WorkspaceConfig()
     cnc: CNCConfig = CNCConfig()
     vision: VisionConfig = VisionConfig()
-
+    
     # Storage paths
     database_path: Path = Path("cnc_detections.db")
     log_path: Path = Path("cncsorter.log")
-
+    
     class Config:
         validate_assignment = True
 
@@ -530,16 +530,16 @@ class SystemConfig(BaseModel):
 config = SystemConfig()
 ```
 
-**Dependencies**: setup.py (for Pydantic)
-**Estimated Time**: 6 hours
+**Dependencies**: setup.py (for Pydantic)  
+**Estimated Time**: 6 hours  
 **Testing**: Configuration validation tests
 
 ---
 
 ## Phase 1 Summary
-**Total Features**: 8
-**Total Estimated Time**: 54 hours (~ 2 weeks)
-**Critical Path**: 1.1 → 1.2 → 1.3 → 1.4
+**Total Features**: 8  
+**Total Estimated Time**: 54 hours (~ 2 weeks)  
+**Critical Path**: 1.1 → 1.2 → 1.3 → 1.4  
 **Testing Coverage**: All features have unit tests
 
 ---
@@ -547,7 +547,7 @@ config = SystemConfig()
 ## Phase 2: Vision & CNC Intelligence (Weeks 4-6)
 
 ### 2.1 Camera Calibration Wizard 🔥 HIGH PRIORITY
-**Files**:
+**Files**: 
 - `src/cncsorter/application/calibration.py` (NEW)
 - `src/cncsorter/infrastructure/camera_calibrator.py` (NEW)
 
@@ -558,13 +558,13 @@ config = SystemConfig()
 - Calibration profiles stored on disk (versioned)
 - GUI and CLI access
 
-**Dependencies**: Phase 1 complete
+**Dependencies**: Phase 1 complete  
 **Estimated Time**: 12 hours
 
 ---
 
 ### 2.2 Lighting Normalization Pipeline
-**Files**:
+**Files**: 
 - `src/cncsorter/infrastructure/image_preprocessor.py` (NEW)
 - `src/cncsorter/infrastructure/vision.py` (MODIFY)
 
@@ -573,13 +573,13 @@ config = SystemConfig()
 - Auto white balance
 - Exposure lock after first frame
 
-**Dependencies**: 2.1 Calibration
+**Dependencies**: 2.1 Calibration  
 **Estimated Time**: 8 hours
 
 ---
 
 ### 2.3 CNC Capability Model
-**Files**:
+**Files**: 
 - `src/cncsorter/domain/cnc_capabilities.py` (NEW)
 
 **Domain Entity**:
@@ -594,13 +594,13 @@ class CNCCapabilities:
     probe_support: bool
 ```
 
-**Dependencies**: None
+**Dependencies**: None  
 **Estimated Time**: 4 hours
 
 ---
 
 ### 2.4 Pick Path Optimization
-**Files**:
+**Files**: 
 - `src/cncsorter/application/pick_planner.py` (NEW)
 
 **Features**:
@@ -610,13 +610,13 @@ class CNCCapabilities:
 
 **Result**: 30-60% cycle time reduction
 
-**Dependencies**: 2.3 CNC Capabilities
+**Dependencies**: 2.3 CNC Capabilities  
 **Estimated Time**: 10 hours
 
 ---
 
 ### 2.5 Collision & Keep-Out Zones
-**Files**:
+**Files**: 
 - `src/cncsorter/domain/entities.py` (EXTEND BedMap)
 - `src/cncsorter/infrastructure/motion_validator.py` (EXTEND)
 
@@ -625,13 +625,13 @@ class CNCCapabilities:
 - Clamps, fixtures, occlusions
 - Enforced by MotionValidator
 
-**Dependencies**: 2.4 Pick Planner
+**Dependencies**: 2.4 Pick Planner  
 **Estimated Time**: 8 hours
 
 ---
 
 ### 2.6 Health Check Endpoint (REST API)
-**Files**:
+**Files**: 
 - `src/cncsorter/presentation/api.py` (NEW)
 - `requirements.txt` (ADD fastapi, uvicorn)
 
@@ -644,13 +644,13 @@ GET /bedmap/latest
 POST /pick/start
 ```
 
-**Dependencies**: FastAPI setup
+**Dependencies**: FastAPI setup  
 **Estimated Time**: 10 hours
 
 ---
 
 ### 2.7 Database Object Tracking (Extended)
-**Files**:
+**Files**: 
 - `src/cncsorter/infrastructure/persistence.py` (EXTEND)
 
 **Features**:
@@ -658,13 +658,13 @@ POST /pick/start
 - Session management
 - Object tracking across runs
 
-**Dependencies**: 1.2 Persistence
+**Dependencies**: 1.2 Persistence  
 **Estimated Time**: 6 hours
 
 ---
 
 ## Phase 2 Summary
-**Total Features**: 7
+**Total Features**: 7  
 **Total Estimated Time**: 58 hours (~ 2 weeks)
 
 ---
@@ -672,7 +672,7 @@ POST /pick/start
 ## Phase 3: Advanced Features & Testing (Weeks 7-9)
 
 ### 3.1 Hybrid CV/ML Classification (Optional)
-**Files**:
+**Files**: 
 - `src/cncsorter/infrastructure/ml_classifier.py` (NEW)
 
 **Pipeline**:
@@ -681,13 +681,13 @@ POST /pick/start
 - ONNX runtime with MobileNet or YOLO Nano
 - Confidence score fusion
 
-**Dependencies**: ONNX runtime
+**Dependencies**: ONNX runtime  
 **Estimated Time**: 16 hours
 
 ---
 
 ### 3.2 WebSocket Live Feed
-**Files**:
+**Files**: 
 - `src/cncsorter/presentation/websocket_server.py` (NEW)
 
 **Features**:
@@ -695,13 +695,13 @@ POST /pick/start
 - Real-time detection overlay
 - Remote monitoring
 
-**Dependencies**: 2.6 REST API
+**Dependencies**: 2.6 REST API  
 **Estimated Time**: 12 hours
 
 ---
 
 ### 3.3 Configuration Hot Reload
-**Files**:
+**Files**: 
 - `src/cncsorter/infrastructure/config_watcher.py` (NEW)
 
 **Features**:
@@ -709,13 +709,13 @@ POST /pick/start
 - Validation before applying
 - No restart required
 
-**Dependencies**: 1.8 Config Validation
+**Dependencies**: 1.8 Config Validation  
 **Estimated Time**: 8 hours
 
 ---
 
 ### 3.4 Replay & Time-Travel Debugging
-**Files**:
+**Files**: 
 - `src/cncsorter/tools/replay.py` (NEW)
 
 **Features**:
@@ -723,13 +723,13 @@ POST /pick/start
 - Algorithm version comparison
 - Offline tuning without hardware
 
-**Dependencies**: 1.2 Persistence
+**Dependencies**: 1.2 Persistence  
 **Estimated Time**: 12 hours
 
 ---
 
 ### 3.5 Synthetic Vision Test Harness
-**Files**:
+**Files**: 
 - `tests/synthetic/test_generator.py` (NEW)
 
 **Features**:
@@ -737,13 +737,13 @@ POST /pick/start
 - Known object layouts
 - Noise, blur, lighting variations
 
-**Dependencies**: pytest framework
+**Dependencies**: pytest framework  
 **Estimated Time**: 14 hours
 
 ---
 
 ### 3.6 Hardware-in-the-Loop (HIL) Mocks
-**Files**:
+**Files**: 
 - `tests/hil/mock_hardware.py` (NEW)
 
 **Features**:
@@ -751,20 +751,20 @@ POST /pick/start
 - CI testing of motion logic
 - Safe regression testing
 
-**Dependencies**: 1.5 Mock CNC
+**Dependencies**: 1.5 Mock CNC  
 **Estimated Time**: 10 hours
 
 ---
 
 ## Phase 3 Summary
-**Total Features**: 6
+**Total Features**: 6  
 **Total Estimated Time**: 72 hours (~ 2-3 weeks)
 
 ---
 
 ## Grand Total
-**Total Features**: 21 major implementations
-**Total Estimated Time**: 184 hours (~6-7 weeks)
+**Total Features**: 21 major implementations  
+**Total Estimated Time**: 184 hours (~6-7 weeks)  
 **Critical Path**: Phase 1 → Phase 2 → Phase 3
 
 ---

@@ -11,6 +11,7 @@ import logging.handlers
 import os
 import sys
 from datetime import datetime
+from typing import Optional
 
 # Default log format
 DEFAULT_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"

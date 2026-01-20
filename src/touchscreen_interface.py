@@ -16,6 +16,10 @@ from datetime import datetime
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
+from cncsorter.config import CNC
+from cncsorter.infrastructure.cnc_controller import CNCController, FluidNCSerial, FluidNCHTTP
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
+from cncsorter.application.pick_planning import PickPlanningService
 
 
 @dataclass
@@ -69,9 +73,33 @@ class TouchscreenInterface:
         # Load configuration
         self.load_configuration()
 
+        # Initialize CNC Controller
+        self.cnc_controller = self._init_cnc_controller()
+        self.pick_service = PickPlanningService(self.repository, self.cnc_controller)
+
         # Subscribe to events
         self.event_bus.subscribe(ObjectsDetected, self.on_objects_detected)
         self.event_bus.subscribe(BedMapCompleted, self.on_bed_map_completed)
+
+    def _init_cnc_controller(self) -> CNCController:
+        """Initialize CNC controller based on configuration."""
+        mode = CNC.get("mode", "serial")
+        try:
+            if mode == "serial":
+                return FluidNCSerial(
+                    port=CNC.get("serial_port", "/dev/ttyUSB0"),
+                    baudrate=CNC.get("serial_baudrate", 115200)
+                )
+            elif mode == "http":
+                return FluidNCHTTP(
+                    host=CNC.get("http_host", "192.168.1.100"),
+                    port=CNC.get("http_port", 80)
+                )
+        except Exception as e:
+            print(f"Failed to initialize CNC controller: {e}")
+
+        # Fallback to Mock
+        return MockCNCController()
 
     def load_configuration(self) -> None:
         """Load configuration from file."""
@@ -428,7 +456,10 @@ class TouchscreenInterface:
         ui.notify('🛑 EMERGENCY STOP ACTIVATED', type='negative')
         self.system_status = "STOPPED"
         self.cycle_progress = 0.0
-        # TODO: Integrate with CNC controller
+        self.pick_service.stop()
+        if self.cnc_controller.is_connected():
+            # Send soft-reset command to FluidNC
+            self.cnc_controller.send_command('\x18')
 
     def start_scan_cycle(self) -> None:
         """Start scan cycle."""
@@ -438,20 +469,34 @@ class TouchscreenInterface:
         self.detected_count = 0
         # TODO: Integrate with scanning system
 
-    def start_pick_place(self) -> None:
+    async def start_pick_place(self) -> None:
         """Start pick and place operation."""
-        if self.detected_count == 0:
+        # Check if we have detected objects (count from events) or pending in repo
+        pending_count = len(self.repository.list_pending())
+
+        if self.detected_count == 0 and pending_count == 0:
             ui.notify('⚠️ No objects detected. Run scan first.', type='warning')
             return
 
-        ui.notify('🔧 Starting pick & place...', type='positive')
-        # TODO: Integrate with pick and place system
+        ui.notify(f'🔧 Starting pick & place for {pending_count} objects...', type='positive')
+
+        def update_progress(progress: float, message: str):
+            self.cycle_progress = progress
+            # Ideally we would update a progress bar here
+            if progress < 1.0 and progress > 0.0:
+                 ui.notify(message, type='info', timeout=1000)
+            elif progress == 1.0:
+                 ui.notify(message, type='positive')
+            elif progress == 0.0 and "Error" in message:
+                 ui.notify(message, type='negative')
+
+        await self.pick_service.execute_pick_and_place(update_progress)
 
     def stop_cycle(self) -> None:
         """Stop current cycle."""
         ui.notify('⏹️ Stopping cycle...', type='warning')
         self.system_status = "IDLE"
-        # TODO: Graceful shutdown of operations
+        self.pick_service.stop()
 
     def reset_system(self) -> None:
         """Reset system."""
@@ -505,7 +550,7 @@ class TouchscreenInterface:
                 'completed': completed,
                 'failed': failed,
                 'active_cameras': sum(1 for cam in self.system_config.cameras if cam.enabled),
-                'cnc_status': 'Connected',  # TODO: Get real status
+                'cnc_status': 'Connected' if self.cnc_controller.is_connected() else 'Disconnected',
                 'last_scan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
         except Exception:
