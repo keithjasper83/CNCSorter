@@ -1,14 +1,11 @@
 """Tests for domain entities."""
-import pytest
 from datetime import datetime
 from uuid import UUID
 
 from cncsorter.domain.entities import (
     CNCCoordinate,
     DetectedObject,
-    CapturedImage,
     BedMap,
-    PickTask,
     Point2D
 )
 
@@ -28,14 +25,6 @@ class TestCNCCoordinate:
         coord = CNCCoordinate(x=10.0, y=20.0, z=5.0)
         data = coord.to_dict()
         assert data == {'x': 10.0, 'y': 20.0, 'z': 5.0}
-
-    # from_dict not implemented in entity yet, removing test
-    # def test_from_dict(self):
-    #     data = {'x': 10.0, 'y': 20.0, 'z': 5.0}
-    #     coord = CNCCoordinate.from_dict(data)
-    #     assert coord.x == 10.0
-    #     assert coord.y == 20.0
-    #     assert coord.z == 5.0
 
 
 class TestDetectedObject:

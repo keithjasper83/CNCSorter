@@ -14,7 +14,7 @@ from cncsorter.application.events import (
     PickTaskCreated,
     BoundaryViolationDetected,
 )
-from cncsorter.domain.interfaces import DetectionRepository, WorkStatus, RepositoryError
+from cncsorter.domain.interfaces import DetectionRepository, RepositoryError
 
 
 class PersistenceSubscriber:
@@ -45,7 +45,7 @@ class PersistenceSubscriber:
                 # Enrich object with event metadata
                 obj.image_id = event.image_id
                 obj.source_camera = event.camera_index
-                
+
                 # Save to repository
                 uuid = self.repository.save(obj)
                 self.logger.info(f"Saved object {uuid} (camera {event.camera_index})")

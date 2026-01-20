@@ -1,5 +1,4 @@
 """Tests for EventBus."""
-import pytest
 from dataclasses import dataclass
 from datetime import datetime
 from cncsorter.application.events import EventBus, DomainEvent
