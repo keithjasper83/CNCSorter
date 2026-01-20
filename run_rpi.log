@@ -1,0 +1,71 @@
+========================================
+CNCSorter - Raspberry Pi Edition
+Object Detection System
+========================================
+
+Detected: Raspberry Pi 5 Model B Rev 1.1
+
+Activating virtual environment...
+Checking and installing dependencies...
+Note: OpenCV installation on Raspberry Pi may take several minutes...
+Installing from pinned requirements for security...
+Looking in indexes: https://pypi.org/simple, https://www.piwheels.org/simple
+Requirement already satisfied: opencv-python==4.10.0.84 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 5)) (4.10.0.84)
+Requirement already satisfied: numpy==1.26.4 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 6)) (1.26.4)
+Requirement already satisfied: pyserial==3.5 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 7)) (3.5)
+Requirement already satisfied: requests==2.32.3 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 8)) (2.32.3)
+Requirement already satisfied: charset-normalizer<4,>=2 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (3.4.4)
+Requirement already satisfied: idna<4,>=2.5 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (3.11)
+Requirement already satisfied: urllib3<3,>=1.21.1 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (2026.1.4)
+
+Starting CNCSorter application...
+Press 's' to save a snapshot, 'q' to quit.
+
+Raspberry Pi Performance Tips:
+- Reduce camera resolution if performance is slow
+- Lower the threshold and min area for faster processing
+- Ensure adequate cooling for sustained operation
+========================================
+
+
+Application closed.
+========================================
+CNCSorter - Raspberry Pi Edition
+Object Detection System
+========================================
+
+Detected: Raspberry Pi 5 Model B Rev 1.1
+
+Activating virtual environment...
+Checking and installing dependencies...
+Note: OpenCV installation on Raspberry Pi may take several minutes...
+Installing from pinned requirements for security...
+Looking in indexes: https://pypi.org/simple, https://www.piwheels.org/simple
+Requirement already satisfied: opencv-python==4.10.0.84 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 5)) (4.10.0.84)
+Requirement already satisfied: numpy==1.26.4 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 6)) (1.26.4)
+Requirement already satisfied: pyserial==3.5 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 7)) (3.5)
+Requirement already satisfied: requests==2.32.3 in ./venv/lib/python3.13/site-packages (from -r requirements-lock.txt (line 8)) (2.32.3)
+Requirement already satisfied: charset-normalizer<4,>=2 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (3.4.4)
+Requirement already satisfied: idna<4,>=2.5 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (3.11)
+Requirement already satisfied: urllib3<3,>=1.21.1 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in ./venv/lib/python3.13/site-packages (from requests==2.32.3->-r requirements-lock.txt (line 8)) (2026.1.4)
+
+Starting CNCSorter application...
+Press 's' to save a snapshot, 'q' to quit.
+
+Raspberry Pi Performance Tips:
+- Reduce camera resolution if performance is slow
+- Lower the threshold and min area for faster processing
+- Ensure adequate cooling for sustained operation
+========================================
+
+
+Application closed.
+./run_rpi.sh: line 13: warning: command substitution: ignored null byte in input
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/k/CNCSorter/src/main.py", line 5, in <module>
+    from cncsorter.infrastructure.vision import VisionSystem, ImageStitcher
+ModuleNotFoundError: No module named 'cncsorter'
