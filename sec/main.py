@@ -38,12 +38,26 @@ while True:
     for cnt in contours:
         if cv2.contourArea(cnt) > min_area:
             obj_count += 1
+            # Minimum enclosing rectangle
+            rect = cv2.minAreaRect(cnt)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+
+            # Get rotation angle
+            angle = rect[2]
+
             # Get bounding box for the label
             x, y, w, h = cv2.boundingRect(cnt)
-            # Draw green outline
+
+            # Draw rotated rectangle (red)
+            cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
+
+            # Draw green outline of the contour
             cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
-            # Label it
-            cv2.putText(frame, f"Obj {obj_count}", (x, y - 10), 
+
+            # Label it with object number and angle
+            label = f"Obj {obj_count} Angle: {angle:.2f}"
+            cv2.putText(frame, label, (x, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     # 6. Show the visual output
