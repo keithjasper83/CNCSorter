@@ -201,12 +201,14 @@ class VisionSystem:
         """
         frame_copy = frame.copy()
 
+        # Batch draw contours
+        if objects:
+            # Reconstruct contours from points
+            all_contours = [np.array(obj.contour_points, dtype=np.int32).reshape(-1, 1, 2) for obj in objects]
+            cv2.drawContours(frame_copy, all_contours, -1, color, thickness)
+
         for obj in objects:
             x, y, w, h = obj.bounding_box
-
-            # Draw contour
-            contour_array = np.array([obj.contour_points], dtype=np.int32)
-            cv2.drawContours(frame_copy, contour_array, -1, color, thickness)
 
             # Draw label
             label = f"Obj {obj.object_id}"

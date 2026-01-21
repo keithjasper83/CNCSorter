@@ -35,16 +35,25 @@ while True:
     
     # 5. Draw and ID
     obj_count = 0
+    valid_contours = []
+    labels = []
+
     for cnt in contours:
         if cv2.contourArea(cnt) > min_area:
             obj_count += 1
+            valid_contours.append(cnt)
             # Get bounding box for the label
             x, y, w, h = cv2.boundingRect(cnt)
-            # Draw green outline
-            cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
-            # Label it
-            cv2.putText(frame, f"Obj {obj_count}", (x, y - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            labels.append((x, y, obj_count))
+
+    # Batch draw contours (optimized)
+    if valid_contours:
+        cv2.drawContours(frame, valid_contours, -1, (0, 255, 0), 2)
+
+    # Label it
+    for x, y, count in labels:
+        cv2.putText(frame, f"Obj {count}", (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     # 6. Show the visual output
     # Concatenate the threshold view so you can see the "binary" logic too

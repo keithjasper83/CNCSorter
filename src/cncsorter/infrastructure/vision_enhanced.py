@@ -324,10 +324,12 @@ class EnhancedVisionSystem:
         detected_objects = []
         obj_count = 0
 
+        valid_contours = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > min_area:
                 obj_count += 1
+                valid_contours.append(cnt)
 
                 # Get bounding box
                 x, y, w, h = cv2.boundingRect(cnt)
@@ -340,23 +342,6 @@ class EnhancedVisionSystem:
                 else:
                     cx, cy = x + w / 2.0, y + h / 2.0
 
-                # Draw green outline on annotated frame
-                cv2.drawContours(annotated_frame, [cnt], -1, (0, 255, 0), 2)
-
-                # Draw label
-                cv2.putText(
-                    annotated_frame,
-                    f"Obj {obj_count}",
-                    (x, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (0, 255, 0),
-                    2
-                )
-
-                # Draw center point
-                cv2.circle(annotated_frame, (int(cx), int(cy)), 5, (0, 0, 255), -1)
-
                 # Store object info
                 detected_objects.append({
                     'id': obj_count,
@@ -365,6 +350,26 @@ class EnhancedVisionSystem:
                     'area': area,
                     'contour': cnt
                 })
+
+        # Batch draw contours
+        if valid_contours:
+            cv2.drawContours(annotated_frame, valid_contours, -1, (0, 255, 0), 2)
+
+        # Draw labels and center points (after contours to ensure visibility)
+        for obj in detected_objects:
+            x, y, w, h = obj['bounding_box']
+            cx, cy = obj['center']
+
+            cv2.putText(
+                annotated_frame,
+                f"Obj {obj['id']}",
+                (x, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2
+            )
+            cv2.circle(annotated_frame, (int(cx), int(cy)), 5, (0, 0, 255), -1)
 
         return detected_objects, annotated_frame, thresh
 
