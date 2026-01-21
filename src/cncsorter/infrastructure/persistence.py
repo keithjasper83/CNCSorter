@@ -183,6 +183,26 @@ class SQLiteDetectionRepository(DetectionRepository):
         finally:
             session.close()
 
+    def list_failed(self) -> List[DetectedObject]:
+        """Retrieve all objects with FAILED status.
+
+        Returns:
+            List of detected objects that failed processing.
+
+        Raises:
+            RepositoryError: If retrieval fails.
+        """
+        session = self.SessionLocal()
+        try:
+            models = session.query(DetectedObjectModel).filter(
+                DetectedObjectModel.work_status == WorkStatus.FAILED.value
+            ).all()
+            return [self._from_model(model) for model in models]
+        except SQLAlchemyError as e:
+            raise RepositoryError(f"Failed to list failed objects: {e}") from e
+        finally:
+            session.close()
+
     def update_status(self, object_id: UUID, status: WorkStatus) -> None:
         """Update the processing status of a detected object.
 
