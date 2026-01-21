@@ -495,3 +495,10 @@ class MockCNCController(CNCController):
     def is_connected(self) -> bool:
         """Check connection status."""
         return self._connected
+
+    def send_command(self, command: str) -> bool:
+        """Send a raw command to the mock controller."""
+        if not self._connected:
+            return False
+        logger.info(f"Mock CNC received command: {command}")
+        return True
