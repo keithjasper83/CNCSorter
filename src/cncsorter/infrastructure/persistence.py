@@ -183,6 +183,29 @@ class SQLiteDetectionRepository(DetectionRepository):
         finally:
             session.close()
 
+    def list_by_status(self, status: WorkStatus) -> List[DetectedObject]:
+        """Retrieve all objects with a specific status.
+
+        Args:
+            status: WorkStatus to filter by.
+
+        Returns:
+            List of detected objects with the given status.
+
+        Raises:
+            RepositoryError: If retrieval fails.
+        """
+        session = self.SessionLocal()
+        try:
+            models = session.query(DetectedObjectModel).filter(
+                DetectedObjectModel.work_status == status.value
+            ).all()
+            return [self._from_model(model) for model in models]
+        except SQLAlchemyError as e:
+            raise RepositoryError(f"Failed to list objects by status {status.value}: {e}") from e
+        finally:
+            session.close()
+
     def update_status(self, object_id: UUID, status: WorkStatus) -> None:
         """Update the processing status of a detected object.
 
