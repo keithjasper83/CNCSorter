@@ -1,7 +1,8 @@
 """Service for planning efficient pick and place operations."""
 import math
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+import asyncio
+from typing import List, Dict, Any, Optional, Tuple, Callable
 from uuid import uuid4
 
 from cncsorter.domain.entities import (
@@ -9,8 +10,11 @@ from cncsorter.domain.entities import (
     CNCCoordinate,
     PickPlan,
     PickOperation,
-    BinLocation
+    BinLocation,
+    PickTask
 )
+from cncsorter.domain.interfaces import DetectionRepository, WorkStatus
+from cncsorter.infrastructure.cnc_controller import CNCController
 from cncsorter.config import SORTING, OBJECTS, CNC
 
 logger = logging.getLogger(__name__)

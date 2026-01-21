@@ -20,38 +20,9 @@ from cncsorter.config import CNC
 from cncsorter.infrastructure.cnc_controller import CNCController, FluidNCSerial, FluidNCHTTP
 from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
 from cncsorter.application.pick_planning import PickPlanningService
-
-
-@dataclass
-class CameraConfig:
-    """Configuration for a single camera."""
-    camera_id: int
-    name: str
-    mount_x: float  # mm
-    mount_y: float  # mm
-    mount_z: float  # mm
-    visible_width: float  # mm at bed level
-    visible_height: float  # mm at bed level
-    tilt_angle: float  # degrees
-    pan_angle: float  # degrees
-    enabled: bool = True
-
-
-@dataclass
-class SystemConfig:
-    """Complete system configuration."""
-    num_cameras: int
-    cameras: List[CameraConfig]
-    x_min: float
-    x_max: float
-    y_min: float
-    y_max: float
-    z_min: float
-    z_max: float
-    safe_z: float
-    overlap_percent: float
-    grid_x: int
-    grid_y: int
+from cncsorter.domain.system_config import SystemConfig, CameraConfig
+from cncsorter.infrastructure.vision import VisionSystem
+from cncsorter.application.scanning import ScanningService
 
 
 class TouchscreenInterface:
@@ -75,7 +46,21 @@ class TouchscreenInterface:
 
         # Initialize CNC Controller
         self.cnc_controller = self._init_cnc_controller()
+
+        # Initialize Vision System
+        # TODO: Support multiple cameras from config
+        self.vision_system = VisionSystem(camera_index=0)
+        self.vision_system.open_camera()
+
+        # Initialize Services
         self.pick_service = PickPlanningService(self.repository, self.cnc_controller)
+        self.scanning_service = ScanningService(
+            repository=self.repository,
+            cnc_controller=self.cnc_controller,
+            vision_system=self.vision_system,
+            event_bus=self.event_bus,
+            config=self.system_config
+        )
 
         # Subscribe to events
         self.event_bus.subscribe(ObjectsDetected, self.on_objects_detected)
@@ -461,13 +446,22 @@ class TouchscreenInterface:
             # Send soft-reset command to FluidNC
             self.cnc_controller.send_command('\x18')
 
-    def start_scan_cycle(self) -> None:
+    async def start_scan_cycle(self) -> None:
         """Start scan cycle."""
         ui.notify('▶️ Starting scan cycle...', type='positive')
         self.system_status = "SCANNING"
         self.cycle_progress = 0.0
         self.detected_count = 0
-        # TODO: Integrate with scanning system
+
+        def update_progress(progress: float, message: str):
+            self.cycle_progress = progress
+            # Only notify on significant updates or errors
+            if "Error" in message:
+                 ui.notify(message, type='negative')
+            elif progress == 1.0:
+                 ui.notify(message, type='positive')
+
+        await self.scanning_service.run_scan(update_progress)
 
     async def start_pick_place(self) -> None:
         """Start pick and place operation."""
@@ -497,6 +491,7 @@ class TouchscreenInterface:
         ui.notify('⏹️ Stopping cycle...', type='warning')
         self.system_status = "IDLE"
         self.pick_service.stop()
+        self.scanning_service.stop()
 
     def reset_system(self) -> None:
         """Reset system."""
