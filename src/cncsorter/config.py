@@ -650,12 +650,16 @@ SORTING = {
             "offset_mm": (0, 0, 0),  # Offset from spindle center
             "handling_types": ["nut", "bolt", "washer", "spring_washer", "hex_bolt", "M2", "M3", "M4", "M5", "M6", "M8", "M10", "M12"],
             "tool_change_location": {"x": 10, "y": 10, "z": 50},
+            "activation_command": "M8",
+            "deactivation_command": "M9",
         },
         "suction_tool": {
             "id": "suction_cup_5mm",
             "offset_mm": (20, 0, 0),
             "handling_types": ["plastic", "nylon", "pcb", "unknown"],
             "tool_change_location": {"x": 10, "y": 50, "z": 50},
+            "activation_command": "M7",
+            "deactivation_command": "M9",
         }
     },
 
