@@ -56,6 +56,21 @@ class DetectionRepository(ABC):
         pass
 
     @abstractmethod
+    def list_by_status(self, status: WorkStatus) -> List[DetectedObject]:
+        """Retrieve all objects with a specific status.
+
+        Args:
+            status: WorkStatus to filter by.
+
+        Returns:
+            List of detected objects with the given status.
+
+        Raises:
+            RepositoryError: If retrieval fails.
+        """
+        pass
+
+    @abstractmethod
     def update_status(self, object_id: UUID, status: WorkStatus) -> None:
         """Update the processing status of a detected object.
 

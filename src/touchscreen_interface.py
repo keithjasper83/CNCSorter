@@ -15,6 +15,7 @@ from datetime import datetime
 
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
+from cncsorter.domain.interfaces import WorkStatus
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
 from cncsorter.config import CNC
 from cncsorter.infrastructure.cnc_controller import CNCController, FluidNCSerial, FluidNCHTTP
@@ -542,7 +543,7 @@ class TouchscreenInterface:
             all_objects = self.repository.list_all(limit=10000)
 
             completed = sum(1 for obj in all_objects if obj.classification != "unknown")
-            failed = 0  # TODO: Track failed objects
+            failed = len(self.repository.list_by_status(WorkStatus.FAILED))
 
             return {
                 'total_detected': len(all_objects),
