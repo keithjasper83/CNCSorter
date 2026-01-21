@@ -7,8 +7,11 @@ Features touch-optimized controls, no keyboard input, comprehensive configuratio
 """
 
 from nicegui import ui
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import json
+import asyncio
+import time
+import os
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -16,6 +19,10 @@ from datetime import datetime
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
+from cncsorter.infrastructure.vision import VisionSystem, ImageStitcher
+from cncsorter.infrastructure.cnc_controller import CNCController, CNCCoordinate
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
+from cncsorter.application.bed_mapping import BedMappingService
 
 
 @dataclass
@@ -59,6 +66,41 @@ class TouchscreenInterface:
         self.system_config: Optional[SystemConfig] = None
         self.event_bus = EventBus()
         self.repository = SQLiteDetectionRepository()
+
+        # Initialize core components
+        try:
+            self.vision_system = VisionSystem(camera_index=0)
+            # Try to open camera, but don't fail hard if it's missing (for dev)
+            if not self.vision_system.open_camera():
+                print("Warning: Could not open camera 0")
+        except Exception as e:
+            print(f"Error initializing vision system: {e}")
+            self.vision_system = None
+
+        # Initialize CNC Controller
+        # Default to Mock for safety/dev unless configured otherwise
+        cnc_mode = os.environ.get("CNC_MODE", "mock")
+
+        if cnc_mode == "mock":
+            self.cnc_controller = MockCNCController(event_bus=self.event_bus)
+            self.cnc_controller.connect()
+            print("Initialized Mock CNC Controller")
+        else:
+            # TODO: Implement real CNC controller initialization based on config
+            print(f"Warning: CNC mode '{cnc_mode}' not fully implemented, falling back to Mock")
+            self.cnc_controller = MockCNCController(event_bus=self.event_bus)
+            self.cnc_controller.connect()
+
+        self.image_stitcher = ImageStitcher()
+
+        if self.vision_system:
+            self.bed_mapping_service = BedMappingService(
+                self.vision_system,
+                self.cnc_controller,
+                self.image_stitcher
+            )
+        else:
+            self.bed_mapping_service = None
 
         # UI state
         self.current_page = "home"
@@ -430,13 +472,66 @@ class TouchscreenInterface:
         self.cycle_progress = 0.0
         # TODO: Integrate with CNC controller
 
-    def start_scan_cycle(self) -> None:
+    async def start_scan_cycle(self) -> None:
         """Start scan cycle."""
+        if self.system_status == "SCANNING":
+            return
+
         ui.notify('▶️ Starting scan cycle...', type='positive')
         self.system_status = "SCANNING"
         self.cycle_progress = 0.0
         self.detected_count = 0
-        # TODO: Integrate with scanning system
+
+        # Run the scan logic in a separate thread to not block UI
+        loop = asyncio.get_running_loop()
+        try:
+             await loop.run_in_executor(None, self._execute_scan_cycle)
+        except Exception as e:
+            ui.notify(f'Error during scan: {str(e)}', type='negative')
+            print(f"Scan error: {e}")
+            self.system_status = "ERROR"
+
+    def _execute_scan_cycle(self) -> None:
+        """Execute the scanning logic (runs in background thread)."""
+        if not self.bed_mapping_service:
+            print("Error: BedMappingService not available")
+            # We can't use ui.notify here easily if context is lost, so just log
+            self.system_status = "ERROR"
+            return
+
+        def update_progress(progress: float, message: str):
+            self.cycle_progress = progress
+            # Note: In NiceGUI, directly modifying state from a thread is generally safe for
+            # simple variables if using bindings, but proper UI updates might need ui.context.
+            # Here we rely on bound variables or timer-based refresh if implemented.
+            print(f"Scan progress: {progress*100:.1f}% - {message}")
+
+        try:
+            total_detected = self.bed_mapping_service.execute_scan(
+                x_min=self.system_config.x_min,
+                x_max=self.system_config.x_max,
+                y_min=self.system_config.y_min,
+                y_max=self.system_config.y_max,
+                grid_x=self.system_config.grid_x,
+                grid_y=self.system_config.grid_y,
+                safe_z=self.system_config.safe_z,
+                progress_callback=update_progress
+            )
+
+            self.detected_count = total_detected
+            self.system_status = "COMPLETE"
+
+            # Notify completion
+            if self.bed_mapping_service.get_current_map():
+                self.event_bus.publish(BedMapCompleted(
+                    map_id=self.bed_mapping_service.get_current_map().map_id,
+                    total_objects=self.detected_count,
+                    timestamp=datetime.now()
+                ))
+
+        except Exception as e:
+            print(f"Error during scan cycle: {e}")
+            self.system_status = "ERROR"
 
     def start_pick_place(self) -> None:
         """Start pick and place operation."""

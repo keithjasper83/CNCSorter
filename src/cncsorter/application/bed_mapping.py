@@ -3,9 +3,10 @@ from typing import List, Optional, Callable
 from datetime import datetime
 import os
 import re
+import time
 import cv2
 
-from ..domain.entities import BedMap, CapturedImage, DetectedObject
+from ..domain.entities import BedMap, CapturedImage, DetectedObject, CNCCoordinate
 from ..infrastructure.vision import VisionSystem, ImageStitcher
 from ..infrastructure.cnc_controller import CNCController
 
@@ -217,3 +218,114 @@ class BedMappingService:
 
         print(f"Map saved to {map_dir}")
         return True
+
+    def _wait_for_move(self, target: CNCCoordinate, timeout: float = 30.0) -> bool:
+        """Wait for CNC to reach target position."""
+        if not self.cnc_controller:
+            return True
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            current = self.cnc_controller.get_position()
+            if current:
+                dist = ((current.x - target.x)**2 + (current.y - target.y)**2 + (current.z - target.z)**2)**0.5
+                if dist < 0.5: # 0.5mm tolerance
+                    return True
+            time.sleep(0.1)
+        return False
+
+    def execute_scan(
+        self,
+        x_min: float, x_max: float,
+        y_min: float, y_max: float,
+        grid_x: int, grid_y: int,
+        safe_z: float,
+        progress_callback: Optional[Callable[[float, str], None]] = None
+    ) -> int:
+        """
+        Execute a full scan cycle.
+
+        Args:
+            x_min: Minimum X coordinate
+            x_max: Maximum X coordinate
+            y_min: Minimum Y coordinate
+            y_max: Maximum Y coordinate
+            grid_x: Number of grid points in X
+            grid_y: Number of grid points in Y
+            safe_z: Safe Z height for movement
+            progress_callback: Optional callback(progress_0_to_1, status_message)
+
+        Returns:
+            Total objects detected
+        """
+        # Calculate grid points
+        points = []
+        if grid_x > 1:
+            x_step = (x_max - x_min) / (grid_x - 1)
+        else:
+            x_step = 0
+
+        if grid_y > 1:
+            y_step = (y_max - y_min) / (grid_y - 1)
+        else:
+            y_step = 0
+
+        for y_idx in range(grid_y):
+            for x_idx in range(grid_x):
+                # Zig-zag pattern optimization
+                if y_idx % 2 == 1:
+                    xi = grid_x - 1 - x_idx
+                else:
+                    xi = x_idx
+
+                x = x_min + xi * x_step
+                y = y_min + y_idx * y_step
+                points.append((x, y))
+
+        print(f"Starting scan with {len(points)} points")
+        if progress_callback:
+            progress_callback(0.0, f"Starting scan with {len(points)} points")
+
+        self.start_new_map()
+        total_detected = 0
+
+        for i, point in enumerate(points):
+             # Move CNC
+             target = CNCCoordinate(x=point[0], y=point[1], z=safe_z)
+             if progress_callback:
+                 progress_callback(i / len(points), f"Moving to {target.x:.1f}, {target.y:.1f}")
+
+             if self.cnc_controller:
+                 if not self.cnc_controller.move_to(target):
+                     print("Failed to send move command")
+
+                 # Wait for move to complete
+                 if not self._wait_for_move(target):
+                     print("Timeout waiting for move")
+             else:
+                 # Simulate move delay if no controller
+                 time.sleep(1)
+
+             # Capture
+             if progress_callback:
+                 progress_callback(i / len(points), "Capturing image...")
+
+             result = self.capture_and_add_image()
+
+             if result:
+                 total_detected += len(result.detected_objects)
+
+        # Stitch
+        if progress_callback:
+            progress_callback(1.0, "Stitching map...")
+        self.stitch_current_map()
+
+        # Save
+        if progress_callback:
+            progress_callback(1.0, "Saving map...")
+        self.save_map_images()
+
+        if progress_callback:
+            progress_callback(1.0, "Scan complete")
+
+        return total_detected
