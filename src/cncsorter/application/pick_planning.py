@@ -1,16 +1,23 @@
 """Service for planning efficient pick and place operations."""
 import math
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+import asyncio
+from typing import List, Dict, Any, Optional, Tuple, Callable, TYPE_CHECKING
 from uuid import uuid4
+
+if TYPE_CHECKING:
+    from cncsorter.domain.interfaces import DetectionRepository
+    from cncsorter.infrastructure.cnc_controller import CNCController
 
 from cncsorter.domain.entities import (
     DetectedObject,
     CNCCoordinate,
     PickPlan,
     PickOperation,
-    BinLocation
+    BinLocation,
+    PickTask
 )
+from cncsorter.domain.interfaces import WorkStatus
 from cncsorter.config import SORTING, OBJECTS, CNC
 
 logger = logging.getLogger(__name__)
@@ -18,7 +25,7 @@ logger = logging.getLogger(__name__)
 class PickPlanningService:
     """Service for planning and executing pick and place operations."""
 
-    def __init__(self, repository: DetectionRepository, cnc_controller: CNCController):
+    def __init__(self, repository: "DetectionRepository", cnc_controller: "CNCController"):
         self.repository = repository
         self.cnc_controller = cnc_controller
         self.safe_z = CNC.get("safe_z_height_mm", 50.0)
@@ -122,7 +129,17 @@ class PickPlanningService:
             await self._move_and_wait(pick_target)
 
             # 3. Simulate Pick (activate magnet/suction)
-            # TODO: Implement actual tool activation
+            # Get default tool or determine based on object (future)
+            tool_name = SORTING.get("default_tool", "magnet_tool")
+            tool_config = SORTING["tools"].get(tool_name, {})
+            activation_cmd = tool_config.get("activation_command")
+
+            if activation_cmd:
+                logger.info(f"Activating tool {tool_name} with command {activation_cmd}")
+                self.cnc_controller.send_command(activation_cmd)
+            else:
+                logger.warning(f"No activation command found for tool {tool_name}")
+
             await asyncio.sleep(0.5)
 
             # 4. Move back to Safe Z
@@ -140,7 +157,16 @@ class PickPlanningService:
             # await self._move_and_wait(drop_pos) # Optional: move down to drop
 
             # 6. Drop
-            # TODO: Deactivate tool
+            tool_name = SORTING.get("default_tool", "magnet_tool")
+            tool_config = SORTING["tools"].get(tool_name, {})
+            deactivation_cmd = tool_config.get("deactivation_command")
+
+            if deactivation_cmd:
+                logger.info(f"Deactivating tool {tool_name} with command {deactivation_cmd}")
+                self.cnc_controller.send_command(deactivation_cmd)
+            else:
+                logger.warning(f"No deactivation command found for tool {tool_name}")
+
             await asyncio.sleep(0.5)
 
             return True
