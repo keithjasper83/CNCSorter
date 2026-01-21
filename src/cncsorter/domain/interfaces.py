@@ -44,6 +44,18 @@ class DetectionRepository(ABC):
         pass
 
     @abstractmethod
+    def list_failed(self) -> List[DetectedObject]:
+        """Retrieve all objects with FAILED status.
+
+        Returns:
+            List of detected objects that failed processing.
+
+        Raises:
+            RepositoryError: If retrieval fails.
+        """
+        pass
+
+    @abstractmethod
     def list_pending(self) -> List[DetectedObject]:
         """Retrieve all objects with PENDING status.
 

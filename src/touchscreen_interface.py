@@ -542,7 +542,7 @@ class TouchscreenInterface:
             all_objects = self.repository.list_all(limit=10000)
 
             completed = sum(1 for obj in all_objects if obj.classification != "unknown")
-            failed = 0  # TODO: Track failed objects
+            failed = len(self.repository.list_failed())
 
             return {
                 'total_detected': len(all_objects),
