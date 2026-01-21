@@ -7,7 +7,7 @@ Features touch-optimized controls, no keyboard input, comprehensive configuratio
 """
 
 from nicegui import ui
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
@@ -126,17 +126,23 @@ class TouchscreenInterface:
 
             # Main content area (scrollable)
             with ui.scroll_area().classes('flex-grow'):
-                with ui.column().classes('w-full p-4 gap-4'):
-                    if self.current_page == "home":
-                        self.create_home_page()
-                    elif self.current_page == "cameras":
-                        self.create_cameras_page()
-                    elif self.current_page == "machine":
-                        self.create_machine_page()
-                    elif self.current_page == "scanning":
-                        self.create_scanning_page()
-                    elif self.current_page == "status":
-                        self.create_status_page()
+                self.content_container = ui.column().classes('w-full p-4 gap-4')
+                self.refresh_ui()
+
+    def refresh_ui(self) -> None:
+        """Refresh the UI content based on current page."""
+        self.content_container.clear()
+        with self.content_container:
+            if self.current_page == "home":
+                self.create_home_page()
+            elif self.current_page == "cameras":
+                self.create_cameras_page()
+            elif self.current_page == "machine":
+                self.create_machine_page()
+            elif self.current_page == "scanning":
+                self.create_scanning_page()
+            elif self.current_page == "status":
+                self.create_status_page()
 
     def create_header(self) -> None:
         """Create header with navigation and emergency stop."""
@@ -421,7 +427,7 @@ class TouchscreenInterface:
         """Navigate to a different page."""
         self.current_page = page
         ui.notify(f'Navigating to {page}')
-        # TODO: Implement page refresh
+        self.refresh_ui()
 
     def emergency_stop(self) -> None:
         """Emergency stop handler."""
@@ -476,7 +482,7 @@ class TouchscreenInterface:
 
         self.system_config.num_cameras = new_count
         ui.notify(f'Camera count: {new_count}')
-        # TODO: Refresh UI
+        self.refresh_ui()
 
     def toggle_camera(self, camera_idx: int, enabled: bool) -> None:
         """Toggle camera enabled state."""
