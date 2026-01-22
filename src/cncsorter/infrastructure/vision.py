@@ -167,12 +167,21 @@ class VisionSystem:
                 # Convert contour to list of tuples
                 contour_points = [(int(pt[0][0]), int(pt[0][1])) for pt in cnt]
 
+                # Calculate rotation angle
+                # Requires at least 5 points to fit an ellipse
+                if len(contour_points) >= 5:
+                    ellipse = cv2.fitEllipse(cnt)
+                    angle = ellipse[2]
+                else:
+                    angle = 0.0  # Cannot determine angle
+
                 detected_obj = DetectedObject(
                     object_id=obj_id,
                     contour_points=contour_points,
                     bounding_box=(x, y, w, h),
                     area=area,
-                    center=Point2D(cx, cy)
+                    center=Point2D(cx, cy),
+                    angle=angle
                 )
 
                 detected_objects.append(detected_obj)
@@ -209,7 +218,7 @@ class VisionSystem:
             cv2.drawContours(frame_copy, contour_array, -1, color, thickness)
 
             # Draw label
-            label = f"Obj {obj.object_id}"
+            label = f"Obj {obj.object_id} Angle: {obj.angle:.2f}"
             cv2.putText(
                 frame_copy,
                 label,

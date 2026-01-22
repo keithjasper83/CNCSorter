@@ -33,6 +33,7 @@ class DetectedObject:
     bounding_box: Tuple[int, int, int, int]  # x, y, width, height
     area: float
     center: Point2D
+    angle: float = 0.0
     image_id: Optional[str] = None
     cnc_coordinate: Optional[CNCCoordinate] = None
     timestamp: Optional[datetime] = None
