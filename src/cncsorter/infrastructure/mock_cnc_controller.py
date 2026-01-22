@@ -335,6 +335,7 @@ class MockCNCController(CNCController):
 
         # Thread control
         self._stop_event = threading.Event()
+        self._abort_event = threading.Event()
         self._server_thread = None
         self._movement_thread = None
 
@@ -380,6 +381,7 @@ class MockCNCController(CNCController):
 
         self._connected = True
         self._stop_event.clear()
+        self._abort_event.clear()
 
         # Start web server in background thread
         self._server_thread = threading.Thread(
@@ -440,6 +442,7 @@ class MockCNCController(CNCController):
         """Simulate physical movement over time."""
         self.is_moving = True
         self.target_pos = target
+        self._abort_event.clear()
 
         start_pos = self.current_pos
 
@@ -457,8 +460,10 @@ class MockCNCController(CNCController):
         duration = distance / self.move_speed
         start_time = time.time()
 
+        aborted = False
         while time.time() - start_time < duration:
-            if self._stop_event.is_set():
+            if self._stop_event.is_set() or self._abort_event.is_set():
+                aborted = self._abort_event.is_set()
                 break
 
             elapsed = time.time() - start_time
@@ -483,8 +488,11 @@ class MockCNCController(CNCController):
             time.sleep(0.05)  # 20Hz update rate
 
         # Finalize
-        self.current_pos = target
+        if not aborted and not self._stop_event.is_set():
+            self.current_pos = target
+
         self.is_moving = False
+        # If aborted, we stop at current_pos (already updated in loop)
 
         if self.event_bus:
             self.event_bus.publish(CNCPositionUpdated(
@@ -495,3 +503,9 @@ class MockCNCController(CNCController):
     def is_connected(self) -> bool:
         """Check connection status."""
         return self._connected
+
+    def emergency_stop(self) -> None:
+        """Trigger an emergency stop."""
+        print("Mock CNC: Emergency Stop triggered")
+        self._abort_event.set()
+        self.is_moving = False

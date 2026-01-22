@@ -61,3 +61,30 @@ class TestMockCNCController:
         assert pos.x == 10.0
 
         cnc.disconnect()
+
+    def test_emergency_stop(self):
+        # Use slow speed to ensure we catch it moving
+        cnc = MockCNCController(port=5005, speed=50.0)
+        cnc.connect()
+
+        target = CNCCoordinate(x=100, y=100, z=0)
+        cnc.move_to(target)
+
+        # Verify it starts moving
+        time.sleep(0.05)
+        assert cnc.is_moving
+
+        # Trigger E-Stop
+        cnc.emergency_stop()
+
+        # Verify it stops
+        time.sleep(0.05)
+        assert not cnc.is_moving
+
+        # Verify it didn't reach target (distance is ~141mm, speed 50, takes ~2.8s)
+        # We stopped almost immediately
+        pos = cnc.get_position()
+        assert pos.x < 100.0
+        assert pos.y < 100.0
+
+        cnc.disconnect()

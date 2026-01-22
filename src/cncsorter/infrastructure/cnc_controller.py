@@ -36,6 +36,11 @@ class CNCController(ABC):
         """Check if connected to the CNC controller."""
         pass
 
+    @abstractmethod
+    def emergency_stop(self) -> None:
+        """Trigger an emergency stop."""
+        pass
+
 
 class FluidNCSerial(CNCController):
     """FluidNC controller implementation using serial communication."""
@@ -168,6 +173,16 @@ class FluidNCSerial(CNCController):
         """Check if connected to FluidNC."""
         return self._connected and self.serial_connection and self.serial_connection.is_open
 
+    def emergency_stop(self) -> None:
+        """Send emergency stop (Reset) command immediately."""
+        if self.serial_connection and self.serial_connection.is_open:
+            try:
+                # 0x18 is Ctrl-X (Soft Reset) for Grbl/FluidNC
+                self.serial_connection.write(b'\x18')
+                print("Emergency Stop sent to FluidNC (Serial)")
+            except Exception as e:
+                print(f"Error sending Emergency Stop: {e}")
+
 
 class FluidNCHTTP(CNCController):
     """FluidNC controller implementation using HTTP/WebSocket API."""
@@ -296,3 +311,23 @@ class FluidNCHTTP(CNCController):
     def is_connected(self) -> bool:
         """Check if connected to FluidNC HTTP."""
         return self._connected
+
+    def emergency_stop(self) -> None:
+        """Send emergency stop command via HTTP."""
+        if not self.is_connected():
+            return
+
+        try:
+            # Send Soft Reset (Ctrl-X / 0x18) via command interface
+            # Note: HTTP might not support realtime characters reliably compared to WebSocket/Serial
+            response = requests.get(
+                f'{self.base_url}/command',
+                params={'commandText': '\x18'},
+                timeout=2
+            )
+            if response.status_code == 200:
+                print("Emergency Stop sent to FluidNC (HTTP)")
+            else:
+                print(f"Failed to send Emergency Stop (HTTP Status: {response.status_code})")
+        except Exception as e:
+            print(f"Error sending Emergency Stop via HTTP: {e}")

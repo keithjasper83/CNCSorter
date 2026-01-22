@@ -6,8 +6,8 @@ Production-ready touchscreen interface optimized for Freenove display.
 Features touch-optimized controls, no keyboard input, comprehensive configuration.
 """
 
-from nicegui import ui
-from typing import Optional, List
+from nicegui import ui, app
+from typing import Optional, List, Dict, Any
 import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
@@ -16,6 +16,8 @@ from datetime import datetime
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
+from cncsorter.infrastructure.cnc_controller import CNCController
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
 
 
 @dataclass
@@ -59,6 +61,12 @@ class TouchscreenInterface:
         self.system_config: Optional[SystemConfig] = None
         self.event_bus = EventBus()
         self.repository = SQLiteDetectionRepository()
+
+        # CNC Controller
+        # Default to Mock for development/testing
+        # In production, this would be configured via config file
+        self.cnc_controller: CNCController = MockCNCController(event_bus=self.event_bus)
+        self.cnc_controller.connect()
 
         # UI state
         self.current_page = "home"
@@ -428,7 +436,9 @@ class TouchscreenInterface:
         ui.notify('🛑 EMERGENCY STOP ACTIVATED', type='negative')
         self.system_status = "STOPPED"
         self.cycle_progress = 0.0
-        # TODO: Integrate with CNC controller
+
+        if self.cnc_controller:
+            self.cnc_controller.emergency_stop()
 
     def start_scan_cycle(self) -> None:
         """Start scan cycle."""
@@ -524,6 +534,9 @@ def main():
     """Run the touchscreen interface."""
     interface = TouchscreenInterface()
     interface.create_ui()
+
+    # Register shutdown handler
+    app.on_shutdown(interface.cnc_controller.disconnect)
 
     # Configure NiceGUI
     ui.run(
