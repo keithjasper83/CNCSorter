@@ -7,7 +7,7 @@ Features touch-optimized controls, no keyboard input, comprehensive configuratio
 """
 
 from nicegui import ui
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
@@ -16,6 +16,8 @@ from datetime import datetime
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
+from cncsorter.infrastructure.cnc_controller import CNCController, FluidNCSerial, FluidNCHTTP
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
 
 
 @dataclass
@@ -48,6 +50,11 @@ class SystemConfig:
     overlap_percent: float
     grid_x: int
     grid_y: int
+    # CNC Configuration
+    cnc_mode: str = "mock"  # serial, http, mock
+    cnc_port: str = "/dev/ttyUSB0"
+    cnc_baud: int = 115200
+    cnc_host: str = "192.168.1.100"
 
 
 class TouchscreenInterface:
@@ -69,9 +76,43 @@ class TouchscreenInterface:
         # Load configuration
         self.load_configuration()
 
+        # Initialize CNC
+        self.cnc_controller = self.initialize_cnc_controller()
+
         # Subscribe to events
         self.event_bus.subscribe(ObjectsDetected, self.on_objects_detected)
         self.event_bus.subscribe(BedMapCompleted, self.on_bed_map_completed)
+
+    def initialize_cnc_controller(self) -> Optional[CNCController]:
+        """Initialize and connect to CNC controller based on config."""
+        controller = None
+        mode = self.system_config.cnc_mode.lower()
+
+        try:
+            if mode == "serial":
+                controller = FluidNCSerial(
+                    port=self.system_config.cnc_port,
+                    baudrate=self.system_config.cnc_baud
+                )
+            elif mode == "http":
+                controller = FluidNCHTTP(
+                    host=self.system_config.cnc_host
+                )
+            elif mode == "mock":
+                controller = MockCNCController(
+                    port=5001  # Use 5001 to avoid conflict with default mock port 5000 if running elsewhere
+                )
+
+            if controller:
+                if controller.connect():
+                    print(f"CNC Controller connected ({mode})")
+                else:
+                    print(f"Failed to connect to CNC controller ({mode})")
+
+            return controller
+        except Exception as e:
+            print(f"Error initializing CNC controller: {e}")
+            return None
 
     def load_configuration(self) -> None:
         """Load configuration from file."""
@@ -505,7 +546,7 @@ class TouchscreenInterface:
                 'completed': completed,
                 'failed': failed,
                 'active_cameras': sum(1 for cam in self.system_config.cameras if cam.enabled),
-                'cnc_status': 'Connected',  # TODO: Get real status
+                'cnc_status': 'Connected' if self.cnc_controller and self.cnc_controller.is_connected() else 'Disconnected',
                 'last_scan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
         except Exception:
