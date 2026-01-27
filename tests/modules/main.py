@@ -8,6 +8,8 @@ def nothing(x):
 # Initialize Camera
 cap = cv2.VideoCapture(0)
 
+stacked = None
+
 # Create a window for the controls
 cv2.namedWindow("Settings")
 cv2.createTrackbar("Threshold", "Settings", 127, 255, nothing)
@@ -49,8 +51,12 @@ while True:
 
     # 6. Show the visual output
     # Concatenate the threshold view so you can see the "binary" logic too
-    thresh_bgr = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-    stacked = np.hstack((frame, thresh_bgr))
+    h, w = frame.shape[:2]
+    if stacked is None or stacked.shape[0] != h or stacked.shape[1] != w * 2:
+        stacked = np.zeros((h, w * 2, 3), dtype=np.uint8)
+
+    stacked[:, :w] = frame
+    cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR, dst=stacked[:, w:])
     
     cv2.imshow("Live Feed (Left) | Computer Vision (Right)", stacked)
 
