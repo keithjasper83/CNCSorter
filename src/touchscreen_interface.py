@@ -7,8 +7,9 @@ Features touch-optimized controls, no keyboard input, comprehensive configuratio
 """
 
 from nicegui import ui
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import json
+import asyncio
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -16,6 +17,9 @@ from datetime import datetime
 # Import from cncsorter package
 from cncsorter.application.events import EventBus, ObjectsDetected, BedMapCompleted
 from cncsorter.infrastructure.persistence import SQLiteDetectionRepository
+from cncsorter.infrastructure.cnc_controller import CNCController, FluidNCSerial, FluidNCHTTP
+from cncsorter.infrastructure.mock_cnc_controller import MockCNCController
+from cncsorter.domain.entities import CNCCoordinate
 
 
 @dataclass
@@ -48,6 +52,10 @@ class SystemConfig:
     overlap_percent: float
     grid_x: int
     grid_y: int
+    cnc_mode: str = "mock"
+    cnc_port: str = "/dev/ttyUSB0"
+    cnc_baud: int = 115200
+    cnc_host: str = "192.168.1.100"
 
 
 class TouchscreenInterface:
@@ -60,6 +68,10 @@ class TouchscreenInterface:
         self.event_bus = EventBus()
         self.repository = SQLiteDetectionRepository()
 
+        # Initialize CNC
+        self.cnc: Optional[CNCController] = None
+        self.current_task: Optional[asyncio.Task] = None
+
         # UI state
         self.current_page = "home"
         self.detected_count = 0
@@ -68,6 +80,7 @@ class TouchscreenInterface:
 
         # Load configuration
         self.load_configuration()
+        self._init_cnc()
 
         # Subscribe to events
         self.event_bus.subscribe(ObjectsDetected, self.on_objects_detected)
@@ -80,7 +93,11 @@ class TouchscreenInterface:
                 data = json.load(f)
                 cameras = [CameraConfig(**cam) for cam in data['cameras']]
                 data['cameras'] = cameras
-                self.system_config = SystemConfig(**data)
+                # Filter out unknown keys to prevent TypeError
+                valid_keys = SystemConfig.__annotations__.keys()
+                filtered_data = {k: v for k, v in data.items() if k in valid_keys}
+                # Use defaults for missing keys
+                self.system_config = SystemConfig(**filtered_data)
         else:
             # Default configuration
             self.system_config = SystemConfig(
@@ -95,6 +112,35 @@ class TouchscreenInterface:
                 overlap_percent=20.0,
                 grid_x=3, grid_y=2
             )
+
+    def _init_cnc(self) -> None:
+        """Initialize CNC controller based on configuration."""
+        if not self.system_config:
+            return
+
+        mode = self.system_config.cnc_mode
+        try:
+            if mode == 'mock':
+                self.cnc = MockCNCController(event_bus=self.event_bus)
+            elif mode == 'serial':
+                self.cnc = FluidNCSerial(
+                    port=self.system_config.cnc_port,
+                    baudrate=self.system_config.cnc_baud
+                )
+            elif mode == 'http':
+                self.cnc = FluidNCHTTP(
+                    host=self.system_config.cnc_host
+                )
+
+            if self.cnc:
+                ui.notify(f'Connecting to CNC ({mode})...')
+                if self.cnc.connect():
+                    ui.notify(f'CNC Connected ({mode})', type='positive')
+                else:
+                    ui.notify(f'Failed to connect to CNC ({mode})', type='negative')
+        except Exception as e:
+            ui.notify(f'Error initializing CNC: {e}', type='negative')
+            print(f"CNC Init Error: {e}")
 
     def save_configuration(self) -> None:
         """Save configuration to file."""
@@ -428,15 +474,114 @@ class TouchscreenInterface:
         ui.notify('🛑 EMERGENCY STOP ACTIVATED', type='negative')
         self.system_status = "STOPPED"
         self.cycle_progress = 0.0
-        # TODO: Integrate with CNC controller
+        # Cancel any running task
+        if self.current_task and not self.current_task.done():
+            self.current_task.cancel()
+        # TODO: Integrate with CNC controller hardware E-Stop
+
+    async def run_scan_cycle(self) -> None:
+        """Execute the scanning cycle."""
+        try:
+            self.cycle_progress = 0.0
+
+            # Calculate grid points
+            # Simple grid generation based on config
+            x_step = (self.system_config.x_max - self.system_config.x_min) / max(1, self.system_config.grid_x)
+            y_step = (self.system_config.y_max - self.system_config.y_min) / max(1, self.system_config.grid_y)
+
+            total_points = self.system_config.grid_x * self.system_config.grid_y
+            current_point = 0
+
+            # Safe Z move first
+            if self.cnc:
+                safe_z_pos = self.cnc.get_position()
+                if safe_z_pos:
+                    safe_z_pos = CNCCoordinate(safe_z_pos.x, safe_z_pos.y, self.system_config.safe_z)
+                    self.cnc.move_to(safe_z_pos)
+                    # Wait for move
+                    if hasattr(self.cnc, 'is_moving'):
+                        while self.cnc.is_moving:
+                            await asyncio.sleep(0.1)
+                    else:
+                        await asyncio.sleep(0.5)
+
+            for ix in range(self.system_config.grid_x):
+                for iy in range(self.system_config.grid_y):
+                    x = self.system_config.x_min + (ix * x_step) + (x_step / 2)
+                    y = self.system_config.y_min + (iy * y_step) + (y_step / 2)
+
+                    target = CNCCoordinate(x, y, self.system_config.safe_z)
+
+                    # Move to position
+                    if self.cnc:
+                        self.cnc.move_to(target)
+
+                        # Wait for arrival
+                        if hasattr(self.cnc, 'is_moving'):
+                            while self.cnc.is_moving:
+                                await asyncio.sleep(0.1)
+                        else:
+                            await asyncio.sleep(0.5)
+                    else:
+                        await asyncio.sleep(0.1)
+
+                    # Simulate capture delay
+                    await asyncio.sleep(0.5)
+
+                    # Simulate detection (fire event or just increment for demo)
+                    # In a real scenario, this would call VisionSystem.capture_and_add_image
+
+                    current_point += 1
+                    self.cycle_progress = current_point / total_points
+
+            self.system_status = "COMPLETE"
+            ui.notify('✅ Scan cycle completed', type='positive')
+
+        except asyncio.CancelledError:
+            self.system_status = "IDLE"
+            ui.notify('Cycle stopped', type='warning')
+            raise
+        except Exception as e:
+            self.system_status = "ERROR"
+            ui.notify(f'❌ Error during scan: {str(e)}', type='negative')
+            raise
+        finally:
+            if self.current_task and self.current_task is asyncio.current_task():
+                self.current_task = None
+
+    async def run_pick_place(self) -> None:
+        """Execute pick and place operation."""
+        try:
+             ui.notify('Starting pick and place sequence...', type='info')
+             # Placeholder sequence
+             total_steps = 10
+             for i in range(total_steps):
+                 await asyncio.sleep(1)
+                 self.cycle_progress = (i + 1) / total_steps
+
+             self.system_status = "COMPLETE"
+             ui.notify('✅ Pick and place completed', type='positive')
+        except asyncio.CancelledError:
+             self.system_status = "IDLE"
+             ui.notify('Pick & Place stopped', type='warning')
+             raise
+        finally:
+             if self.current_task and self.current_task is asyncio.current_task():
+                 self.current_task = None
 
     def start_scan_cycle(self) -> None:
         """Start scan cycle."""
+        if self.system_status not in ["IDLE", "COMPLETE"]:
+            ui.notify('System is busy', type='warning')
+            return
+
         ui.notify('▶️ Starting scan cycle...', type='positive')
         self.system_status = "SCANNING"
         self.cycle_progress = 0.0
         self.detected_count = 0
-        # TODO: Integrate with scanning system
+
+        # Start the background task
+        self.current_task = asyncio.create_task(self.run_scan_cycle())
 
     def start_pick_place(self) -> None:
         """Start pick and place operation."""
@@ -444,14 +589,24 @@ class TouchscreenInterface:
             ui.notify('⚠️ No objects detected. Run scan first.', type='warning')
             return
 
+        if self.system_status not in ["IDLE", "COMPLETE"]:
+             ui.notify('System is busy', type='warning')
+             return
+
         ui.notify('🔧 Starting pick & place...', type='positive')
-        # TODO: Integrate with pick and place system
+        self.system_status = "PICKING"
+        self.current_task = asyncio.create_task(self.run_pick_place())
 
     def stop_cycle(self) -> None:
         """Stop current cycle."""
+        if self.system_status == "IDLE":
+             return
+
         ui.notify('⏹️ Stopping cycle...', type='warning')
-        self.system_status = "IDLE"
-        # TODO: Graceful shutdown of operations
+
+        # Cancel running task
+        if self.current_task and not self.current_task.done():
+            self.current_task.cancel()
 
     def reset_system(self) -> None:
         """Reset system."""
