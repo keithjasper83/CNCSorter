@@ -69,6 +69,7 @@ class TouchscreenInterface:
         self.detected_count = 0
         self.cycle_progress = 0.0
         self.system_status = "IDLE"
+        self.content_container = None
 
         # Load configuration
         self.load_configuration()
@@ -154,17 +155,29 @@ class TouchscreenInterface:
 
             # Main content area (scrollable)
             with ui.scroll_area().classes('flex-grow'):
-                with ui.column().classes('w-full p-4 gap-4'):
-                    if self.current_page == "home":
-                        self.create_home_page()
-                    elif self.current_page == "cameras":
-                        self.create_cameras_page()
-                    elif self.current_page == "machine":
-                        self.create_machine_page()
-                    elif self.current_page == "scanning":
-                        self.create_scanning_page()
-                    elif self.current_page == "status":
-                        self.create_status_page()
+                self.content_container = ui.column().classes('w-full p-4 gap-4')
+                with self.content_container:
+                    self.render_page_content()
+
+    def render_page_content(self) -> None:
+        """Render the content for the current page."""
+        if self.current_page == "home":
+            self.create_home_page()
+        elif self.current_page == "cameras":
+            self.create_cameras_page()
+        elif self.current_page == "machine":
+            self.create_machine_page()
+        elif self.current_page == "scanning":
+            self.create_scanning_page()
+        elif self.current_page == "status":
+            self.create_status_page()
+
+    def refresh_ui(self) -> None:
+        """Refresh the current page content."""
+        if self.content_container:
+            self.content_container.clear()
+            with self.content_container:
+                self.render_page_content()
 
     def create_header(self) -> None:
         """Create header with navigation and emergency stop."""
@@ -449,7 +462,7 @@ class TouchscreenInterface:
         """Navigate to a different page."""
         self.current_page = page
         ui.notify(f'Navigating to {page}')
-        # TODO: Implement page refresh
+        self.refresh_ui()
 
     def emergency_stop(self) -> None:
         """Emergency stop handler."""
@@ -521,7 +534,7 @@ class TouchscreenInterface:
 
         self.system_config.num_cameras = new_count
         ui.notify(f'Camera count: {new_count}')
-        # TODO: Refresh UI
+        self.refresh_ui()
 
     def toggle_camera(self, camera_idx: int, enabled: bool) -> None:
         """Toggle camera enabled state."""
